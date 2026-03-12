@@ -75,7 +75,7 @@ class AboutUsScreen extends StatelessWidget {
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: 10),
-      padding: EdgeInsets.symmetric(horizontal: 12),
+
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
 
@@ -84,12 +84,16 @@ class AboutUsScreen extends StatelessWidget {
 
         // Glow shadow
       ),
-      child: ListTile(
-        title: Text(title, style: text15()),
-        trailing:
-            trailing ?? const Icon(Icons.chevron_right, color: AppColors.grey),
-        contentPadding: EdgeInsets.zero,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(30),
         onTap: onTap,
+        child: ListTile(
+          title: Text(title, style: text15()),
+          trailing:
+              trailing ??
+              const Icon(Icons.chevron_right, color: AppColors.grey),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12),
+        ),
       ),
     );
   }

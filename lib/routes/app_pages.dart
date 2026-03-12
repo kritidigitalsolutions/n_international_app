@@ -10,6 +10,7 @@ import 'package:n_square_international/views/afterLogin/profile/language_page.da
 import 'package:n_square_international/views/afterLogin/profile/offline_download.dart';
 import 'package:n_square_international/views/afterLogin/profile/recharge_page.dart';
 import 'package:n_square_international/views/afterLogin/profile/setting_page.dart';
+import 'package:n_square_international/views/beforeLogin/enter_full_name_page.dart';
 import 'package:n_square_international/views/beforeLogin/login_screen.dart';
 import 'package:n_square_international/views/beforeLogin/otp_page.dart';
 import 'package:n_square_international/views/beforeLogin/welcome_screen.dart';
@@ -107,6 +108,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.videoPlay,
       page: () => const SeriesPosterPlayerPage(),
+      transition: Transition.rightToLeft,
+    ),
+
+    GetPage(
+      name: AppRoutes.fullName,
+      page: () => const EnterFullNamePage(),
       transition: Transition.rightToLeft,
     ),
   ];

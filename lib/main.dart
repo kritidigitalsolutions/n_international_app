@@ -49,25 +49,27 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
+    return SafeArea(
+      child: Scaffold(
+        extendBody: true,
 
-      body: Stack(
-        children: [
-          backgroundGradient(),
+        body: Stack(
+          children: [
+            backgroundGradient(),
 
-          /// PAGE SWITCH
-          Obx(() => controller.pages[controller.currentIndex.value]),
-        ],
-      ),
+            /// PAGE SWITCH
+            Obx(() => controller.pages[controller.currentIndex.value]),
+          ],
+        ),
 
-      /// BOTTOM NAV
-      bottomNavigationBar: Obx(
-        () => CustomBottomNavBar(
-          currentIndex: controller.currentIndex.value,
-          onTap: (index) {
-            controller.changeIndex(index);
-          },
+        /// BOTTOM NAV
+        bottomNavigationBar: Obx(
+          () => CustomBottomNavBar(
+            currentIndex: controller.currentIndex.value,
+            onTap: (index) {
+              controller.changeIndex(index);
+            },
+          ),
         ),
       ),
     );

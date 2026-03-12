@@ -29,54 +29,58 @@ class RechargeScreen extends StatelessWidget {
           backgroundGradient(),
           SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Choose Your Pack',
-                  style: text20(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 20),
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Choose Your Pack',
+                    style: text20(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 20),
 
-                _buildPackCard(price: '49', episodes: '5', isPremium: false),
-                const SizedBox(height: 12),
+                  _buildPackCard(price: '49', episodes: '5', isPremium: false),
+                  const SizedBox(height: 12),
 
-                _buildPackCard(price: '99', episodes: '12', isPremium: false),
-                const SizedBox(height: 12),
+                  _buildPackCard(price: '99', episodes: '12', isPremium: false),
+                  const SizedBox(height: 12),
 
-                _buildPackCard(price: '199', episodes: '30', isPremium: false),
-                const SizedBox(height: 20),
+                  _buildPackCard(
+                    price: '199',
+                    episodes: '30',
+                    isPremium: false,
+                  ),
+                  const SizedBox(height: 20),
 
-                _buildPremiumPack(),
-                const SizedBox(height: 40),
+                  _buildPremiumPack(),
+                  const SizedBox(height: 40),
 
-                Text(
-                  'Choose Payment Method',
-                  style: text18(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 16),
+                  Text(
+                    'Choose Payment Method',
+                    style: text18(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 16),
 
-                Row(
-                  spacing: 10,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    _buildPaymentIcon(AppImages.gPay),
-                    _buildPaymentIcon(AppImages.phonepe),
-                    _buildPaymentIcon(AppImages.paytm),
-                  ],
-                ),
+                  Row(
+                    spacing: 10,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      _buildPaymentIcon(AppImages.gPay),
+                      _buildPaymentIcon(AppImages.phonepe),
+                      _buildPaymentIcon(AppImages.paytm),
+                    ],
+                  ),
 
-                const SizedBox(height: 40),
+                  const SizedBox(height: 40),
 
-                CustomButton(
-                  title: "Continue",
-                  onPressed: () {},
+                  CustomButton(
+                    title: "Continue",
+                    onPressed: () {},
 
-                  textColor: AppColors.textPrimary,
-                ),
-
-                const SizedBox(height: 24),
-              ],
+                    textColor: AppColors.textPrimary,
+                  ),
+                ],
+              ),
             ),
           ),
         ],

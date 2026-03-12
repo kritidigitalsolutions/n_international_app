@@ -1,11 +1,20 @@
 class AppRoutes {
   AppRoutes._(); // private constructor
 
+  // auth
+
   static const splash = '/splash';
   static const welcomePage = '/welcomePage';
   static const login = "/login";
   static const otp = '/otp';
+  static const fullName = "/fullName";
+
+  // home pages
+
   static const myHome = '/myHome';
+
+  // profile pages
+
   static const recharge = "/recharge";
   static const history = '/history';
 

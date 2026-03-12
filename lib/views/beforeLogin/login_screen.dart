@@ -36,7 +36,7 @@ class LoginPage extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  CustomTextButton(
+                  CustomButton(
                     title: "Send Otp",
                     onPressed: () {
                       controller.submit();

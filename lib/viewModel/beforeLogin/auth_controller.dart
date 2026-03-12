@@ -76,7 +76,7 @@ class OtpController extends GetxController {
     isLoading.value = false;
 
     Get.snackbar("Success", "OTP Verified: $otp");
-    Get.toNamed(AppRoutes.myHome);
+    Get.toNamed(AppRoutes.fullName);
   }
 
   @override
