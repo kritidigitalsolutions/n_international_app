@@ -16,18 +16,13 @@ class ReelController extends GetxController {
   void onInit() {
     super.onInit();
 
-    videoController =
-        VideoPlayerController.networkUrl(
-            Uri.parse(
-              "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
-            ),
-          )
-          ..initialize().then((_) {
-            videoController.setLooping(true);
-            videoController.play();
-            startHideTimer();
-            update();
-          });
+    videoController = VideoPlayerController.asset("assets/video/reel.mp4")
+      ..initialize().then((_) {
+        videoController.setLooping(true);
+        videoController.play();
+        startHideTimer();
+        update();
+      });
   }
 
   /// Start auto hide timer
