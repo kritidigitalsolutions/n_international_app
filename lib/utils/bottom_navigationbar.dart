@@ -15,8 +15,8 @@ class CustomBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.fromLTRB(15, 10, 15, 10),
-      height: 50,
+      margin: EdgeInsets.all(10),
+      height: 55,
       decoration: decorationBox(30),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -37,7 +37,7 @@ class CustomBottomNavBar extends StatelessWidget {
       onTap: () => onTap(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(5),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.white.withOpacity(0.15)
@@ -46,7 +46,7 @@ class CustomBottomNavBar extends StatelessWidget {
         ),
         child: Icon(
           icon,
-          size: 22,
+          size: 25,
           color: isSelected ? AppColors.white : AppColors.textSecondary,
         ),
       ),

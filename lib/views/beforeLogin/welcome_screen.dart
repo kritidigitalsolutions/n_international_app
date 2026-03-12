@@ -59,13 +59,13 @@ class WelcomeScreen extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
-
-                  CustomGradientButton(
-                    title: "Skip for now",
-                    onPressed: () {
-                      Get.toNamed(AppRoutes.myHome);
-                    },
+                  SafeArea(
+                    child: CustomGradientButton(
+                      title: "Skip for now",
+                      onPressed: () {
+                        Get.toNamed(AppRoutes.myHome);
+                      },
+                    ),
                   ),
 
                   const SizedBox(height: 20),

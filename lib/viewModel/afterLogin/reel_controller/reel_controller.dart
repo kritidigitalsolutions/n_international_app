@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 
@@ -6,6 +8,9 @@ class ReelController extends GetxController {
 
   var isPlaying = true.obs;
   var isMuted = false.obs;
+  var showControls = true.obs;
+
+  Timer? _hideTimer;
 
   @override
   void onInit() {
@@ -20,14 +25,33 @@ class ReelController extends GetxController {
           ..initialize().then((_) {
             videoController.setLooping(true);
             videoController.play();
+            startHideTimer();
             update();
           });
+  }
+
+  /// Start auto hide timer
+  void startHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      showControls.value = false;
+    });
+  }
+
+  /// Toggle controls on tap
+  void toggleControls() {
+    showControls.value = !showControls.value;
+
+    if (showControls.value) {
+      startHideTimer();
+    }
   }
 
   void togglePlay() {
     if (videoController.value.isPlaying) {
       videoController.pause();
       isPlaying.value = false;
+      toggleControls();
     } else {
       videoController.play();
       isPlaying.value = true;
@@ -44,6 +68,14 @@ class ReelController extends GetxController {
     }
   }
 
+  @override
+  void onClose() {
+    _hideTimer?.cancel();
+    videoController.pause();
+    videoController.dispose();
+    super.onClose();
+  }
+
   void saveReel() {
     Get.snackbar("Saved", "Reel saved to bookmarks");
   }
@@ -54,12 +86,5 @@ class ReelController extends GetxController {
 
   void shareReel() {
     Get.snackbar("Share", "Sharing reel...");
-  }
-
-  @override
-  void onClose() {
-    videoController.pause();
-    videoController.dispose();
-    super.onClose();
   }
 }

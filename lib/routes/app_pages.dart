@@ -46,7 +46,7 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.myHome,
-      page: () => const MyHomePage(),
+      page: () => MyHomePage(),
       transition: Transition.rightToLeft,
     ),
 

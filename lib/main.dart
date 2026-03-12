@@ -5,10 +5,7 @@ import 'package:n_square_international/routes/app_pages.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/bottom_navigationbar.dart';
-import 'package:n_square_international/views/afterLogin/home_screen/favorite_screen.dart';
-import 'package:n_square_international/views/afterLogin/home_screen/home_screen.dart';
-import 'package:n_square_international/views/afterLogin/profile/profile_page.dart';
-import 'package:n_square_international/views/afterLogin/reel_page/reel_page.dart';
+import 'package:n_square_international/viewModel/afterLogin/bottom_nac_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,54 +42,33 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class MyHomePage extends StatelessWidget {
+  MyHomePage({super.key});
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int currentIndex = 0;
-
-  late final List<Widget> pages = [
-    HomeScreen(),
-    FavoriteScreen(),
-    ReelPage(),
-    ProfilePage(),
-  ];
+  final BottomNavController controller = Get.put(BottomNavController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
+
       body: Stack(
         children: [
           backgroundGradient(),
-          pages[currentIndex],
 
-          // Positioned(
-          //   left: 0,
-          //   right: 0,
-          //   bottom: 0,
-          //   child: CustomBottomNavBar(
-          //     currentIndex: currentIndex,
-          //     onTap: (index) {
-          //       setState(() {
-          //         currentIndex = index;
-          //       });
-          //     },
-          //   ),
-          // ),
+          /// PAGE SWITCH
+          Obx(() => controller.pages[controller.currentIndex.value]),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: currentIndex,
-        onTap: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
+
+      /// BOTTOM NAV
+      bottomNavigationBar: Obx(
+        () => CustomBottomNavBar(
+          currentIndex: controller.currentIndex.value,
+          onTap: (index) {
+            controller.changeIndex(index);
+          },
+        ),
       ),
     );
   }
