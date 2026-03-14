@@ -58,19 +58,70 @@ class ListenSongsPage extends StatelessWidget {
                 Obx(
                   () => Row(
                     mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-
+                    crossAxisAlignment: CrossAxisAlignment.center, // important
                     children: [
-                      CustomTextButton(
-                        textColor: controller.index.value == 0
-                            ? AppColors.error
-                            : AppColors.white,
-                        title: "Songs",
-                        onPressed: () {
+                      SizedBox(width: 10),
+                      // Language Popup
+                      PopupMenuButton<String>(
+                        padding: EdgeInsets.zero, // remove internal padding
+                        onSelected: (value) {
+                          controller.selectedLanguage.value = value;
+                          controller.getSongsByLanguage(value);
                           controller.toggle(0);
                         },
+                        color: AppColors.card,
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: "Hindi",
+                            child: Text("Hindi", style: text14()),
+                          ),
+                          PopupMenuItem(
+                            value: "English",
+                            child: Text("English", style: text14()),
+                          ),
+                          PopupMenuItem(
+                            value: "Punjabi",
+                            child: Text("Punjabi", style: text14()),
+                          ),
+                          PopupMenuItem(
+                            value: "Tamil",
+                            child: Text("Tamil", style: text14()),
+                          ),
+                          PopupMenuItem(
+                            value: "Telugu",
+                            child: Text("Telugu", style: text14()),
+                          ),
+                        ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              controller.selectedLanguage.value.isEmpty
+                                  ? "Language"
+                                  : controller.selectedLanguage.value,
+                              style: text14(
+                                color: controller.index.value == 0
+                                    ? AppColors.error
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down,
+                              size: 16,
+                              color: controller.index.value == 0
+                                  ? AppColors.error
+                                  : AppColors.textPrimary,
+                            ),
+                          ],
+                        ),
                       ),
-                      Text("|"),
+
+                      const SizedBox(width: 8),
+                      Text("|", style: text14(color: AppColors.white)),
+                      const SizedBox(width: 8),
+
+                      // My Playlist Button
                       CustomTextButton(
                         textColor: controller.index.value == 1
                             ? AppColors.error
@@ -83,7 +134,6 @@ class ListenSongsPage extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 SizedBox(height: 10),
 
                 /// Tabs (ONLY this needs Obx)

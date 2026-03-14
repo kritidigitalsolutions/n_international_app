@@ -26,6 +26,14 @@ class SongListController extends GetxController {
     // In real app: fetch different data based on tab
   }
 
+  RxString selectedLanguage = "".obs;
+
+  void getSongsByLanguage(String language) {
+    print("Selected Language: $language");
+
+    /// call API
+  }
+
   void showMoreOptions(int index) {
     Get.bottomSheet(
       Container(
