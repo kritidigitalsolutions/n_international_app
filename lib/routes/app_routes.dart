@@ -29,4 +29,5 @@ class AppRoutes {
   static const musicPlay = "/musicPlay";
 
   static const videoPlay = "/videoPlay";
+  static const fullProfile = "/fullProfile";
 }

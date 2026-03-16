@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:n_square_international/res/app_colors.dart';
 import 'package:n_square_international/routes/app_pages.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/bottom_navigationbar.dart';
+import 'package:n_square_international/utils/hive_service/userdetail.dart';
 import 'package:n_square_international/viewModel/afterLogin/bottom_nac_controller.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Register Hive adapter for UserDetails
+  Hive.registerAdapter(UserDetailsAdapter());
+
+  // Open the box
+  await Hive.openBox<UserDetails>('userBox');
   runApp(const MyApp());
 }
 

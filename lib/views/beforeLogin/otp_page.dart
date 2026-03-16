@@ -36,7 +36,7 @@ class _OtpScreenState extends State<OtpScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(
-                  4,
+                  6,
                   (index) => OtpTextField(
                     index: index,
                     controller: controller.otpControllers[index],

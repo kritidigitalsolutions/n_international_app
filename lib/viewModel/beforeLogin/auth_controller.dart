@@ -2,82 +2,148 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/custom_snakebar.dart';
+import '../../repo/auth_repo.dart';
+import '../../utils/hive_service/hive_service.dart';
+import '../../utils/hive_service/userdetail.dart';
 
 class LoginController extends GetxController {
   final TextEditingController ctr = TextEditingController();
   final GlobalKey<FormState> formKey = GlobalKey();
-
-  void submit() {
-    if (formKey.currentState!.validate()) {
+  var isLoading = false.obs;
+  final _repo = AuthRepo();
+  Future<void> submit() async {
+    if (!formKey.currentState!.validate()) {
+      CustomSnackbar.showError(
+        title: "Error",
+        message: "Please fill all fields correctly",
+      );
+      return;
+    }
+    isLoading.value = true;
+    try {
+      await _repo.sendOtp(ctr.text.trim());
       CustomSnackbar.showSuccess(
         title: "Success",
         message: "Otp send successfully",
       );
-      Get.toNamed(AppRoutes.otp);
-    } else {
-      CustomSnackbar.showSuccess(
-        title: "Error",
-        message: "Something went wrong",
+      Get.toNamed(
+        AppRoutes.otp,
+        arguments: ctr.text.trim(),
       );
+    } catch (e) {
+      CustomSnackbar.showError(
+        title: "Error",
+        message: "Something went wrong. Please try again later",
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 }
+/// otp controller
 
 class OtpController extends GetxController {
-  final int otpLength = 4;
+  final isLoading = false.obs;
+  late String phone;
+  final _repo = AuthRepo();
+  final List<TextEditingController> otpControllers =
+  List.generate(6, (_) => TextEditingController());
 
-  late List<TextEditingController> otpControllers;
-  late List<FocusNode> focusNodes;
-
-  RxBool isLoading = false.obs;
+  final List<FocusNode> focusNodes =
+  List.generate(6, (_) => FocusNode());
 
   @override
   void onInit() {
-    otpControllers = List.generate(
-      otpLength,
-      (index) => TextEditingController(),
-    );
-    focusNodes = List.generate(otpLength, (index) => FocusNode());
+    phone = Get.arguments;
     super.onInit();
   }
-
+  // OTP input change
   void onOtpChanged(String value, int index) {
-    if (value.isNotEmpty) {
-      if (index < otpLength - 1) {
-        focusNodes[index + 1].requestFocus();
-      } else {
-        focusNodes[index].unfocus();
-      }
+    if (value.isNotEmpty && index < 5) {
+      focusNodes[index + 1].requestFocus();
+    }
+    if (value.isEmpty && index > 0) {
+      focusNodes[index - 1].requestFocus();
+    }
+    // auto submit when last digit entered
+    if (index == 5 && value.isNotEmpty) {
+      submitOtp();
     }
   }
-
+  // Handle backspace
   void handleBackspace(int index) {
-    if (otpControllers[index].text.isEmpty && index > 0) {
+    if (otpControllers[index].text.isNotEmpty) {
+      otpControllers[index].clear();
+    } else if (index > 0) {
+      otpControllers[index - 1].clear();
       focusNodes[index - 1].requestFocus();
     }
   }
 
-  String getOtp() {
-    return otpControllers.map((e) => e.text).join();
-  }
-
-  void submitOtp() async {
-    String otp = getOtp();
-
-    if (otp.length < otpLength) {
-      Get.snackbar("Error", "Please enter complete OTP");
+  // Submit OTP
+  void submitOtp() {
+    String otp = otpControllers.map((e) => e.text).join();
+    if (otp.length < 6) {
+      CustomSnackbar.showError(
+        title: "Error",
+        message: "Please enter complete OTP",
+      );
       return;
     }
 
-    isLoading.value = true;
-
-    await Future.delayed(const Duration(seconds: 2)); // simulate API
-
-    isLoading.value = false;
-
-    Get.snackbar("Success", "OTP Verified: $otp");
-    Get.toNamed(AppRoutes.fullName);
+    verifyOtp(phone, otp);
   }
+
+  // --------------------------------
+  // API Call verify otp
+  // --------------------------------
+
+  Future<void> verifyOtp(String phone, String otp) async {
+    isLoading.value = true;
+    try {
+      final res = await _repo.verfiyOtp(phone, otp);
+      final isNewUser = res["isNewUser"];
+
+      CustomSnackbar.showSuccess(
+        title: "Success",
+        message: "OTP Verified Successfully",
+      );
+
+      // Save user to Hive
+      final userJson = res["user"] ?? {
+        "name": "",
+        "dob": "",
+        "gender": "",
+        "phone": phone,
+      };
+      final token = res["token"] ?? "";
+
+      final user = UserDetails(
+        name: userJson["name"] ?? "",
+        dob: userJson["dob"] ?? "",
+        gender: userJson["gender"] ?? "",
+        token: token,
+        phone: userJson["phone"] ?? phone,
+      );
+
+      await HiveService.saveUser(user);
+
+      // Navigate to full name / profile page
+      Get.toNamed(
+        AppRoutes.fullName,
+        arguments: phone,
+      );
+
+    } catch (e) {
+      CustomSnackbar.showError(
+        title: "Error",
+        message: "Something went wrong. Please try again later",
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
 
   @override
   void onClose() {

@@ -5,6 +5,9 @@ import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 
+import '../../model/request/auth_request_model/auth_req_model.dart';
+import '../../repo/auth_repo.dart';
+
 class EnterFullNamePage extends StatefulWidget {
   const EnterFullNamePage({super.key});
 
@@ -14,8 +17,21 @@ class EnterFullNamePage extends StatefulWidget {
 
 class _EnterFullNamePageState extends State<EnterFullNamePage> {
   final TextEditingController nameController = TextEditingController();
+  final phone = Get.arguments as String;
 
-  void submitName() {
+  void submitName(String phone) async {
+    final phone = Get.arguments as String?;
+
+    if (phone == null || phone.isEmpty) {
+      Get.snackbar(
+        "Error",
+        "Phone number not found. Please go back and verify OTP again.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    // Check if user entered a name
     if (nameController.text.trim().isEmpty) {
       Get.snackbar(
         "Error",
@@ -25,8 +41,31 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
       return;
     }
 
-    Get.toNamed(AppRoutes.myHome);
+    try {
+      // Create request model
+      final model = UserDetailsReqModel(
+        name: nameController.text.trim(),
+        phone: phone, // phone from OTP page
+        email: "",    // blank email
+        image: "",    // blank image
+      );
+
+      // Call register API
+      await AuthRepo().registerUser(model);
+
+      // Navigate to home page after successful registration
+      Get.offAllNamed(AppRoutes.myHome);
+
+    } catch (e) {
+      Get.snackbar(
+        "Error",
+        "Registration failed. Please try again.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      print("Registration error: $e");
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +117,9 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
             ),
             SizedBox(height: 40),
 
-            CustomButton(title: "Continue", onPressed: () {}),
+            CustomButton(title: "Continue", onPressed: () {
+              submitName(phone);
+            }),
           ],
         ),
       ),

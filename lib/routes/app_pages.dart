@@ -15,6 +15,7 @@ import 'package:n_square_international/views/beforeLogin/login_screen.dart';
 import 'package:n_square_international/views/beforeLogin/otp_page.dart';
 import 'package:n_square_international/views/beforeLogin/welcome_screen.dart';
 import 'package:n_square_international/views/splash_screen.dart';
+import '../views/afterLogin/profile/full_profile_page.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -114,6 +115,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.fullName,
       page: () => const EnterFullNamePage(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.fullProfile,
+      page: () => const FullProfilePage(),
       transition: Transition.rightToLeft,
     ),
   ];

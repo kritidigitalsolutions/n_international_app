@@ -6,11 +6,15 @@ import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 
+import '../../../viewModel/afterLogin/user_controller/user.controller.dart';
+
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final userController = Get.put(UserController());
+    userController.fetchUserName();
     return Scaffold(
       body: Stack(
         children: [
@@ -25,19 +29,25 @@ class ProfilePage extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
                   child: Row(
                     children: [
-                      const CircleAvatar(
-                        radius: 22,
-                        backgroundImage: NetworkImage(
-                          'https://i.pravatar.cc/150?img=68', // replace with your image
+                      GestureDetector(
+                        onTap: () {
+                          Get.offAllNamed(AppRoutes.fullProfile);
+                        },
+                        child: const CircleAvatar(
+                          radius: 22,
+                          backgroundImage: NetworkImage(
+                            'https://i.pravatar.cc/150?img=68', // replace with your image
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        'Hello\nAshish',
-                        style: text20(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  Obx(() => Text(
+                    'Hello\n${userController.userName.value.isEmpty ? "User" : userController.userName.value}',
+                    style: text20(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                       ),
                     ],
                   ),
