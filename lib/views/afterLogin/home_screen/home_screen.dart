@@ -7,6 +7,8 @@ import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import 'package:n_square_international/viewModel/afterLogin/home_controller.dart';
 
+import '../../../data/api_responce_data.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -19,7 +21,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     ctr.checkFirstTimeSnackbar();
   }
@@ -37,15 +38,12 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 CustomTextButton(
                   textColor: AppColors.error,
-
                   title: "Drama Series",
                   onPressed: () {},
                 ),
                 Text(
                   "|",
-                  style: text16(
-                    color: AppColors.textPrimary,
-                  ).copyWith(height: 1.5),
+                  style: text16(color: AppColors.textPrimary).copyWith(height: 1.5),
                 ),
                 CustomTextButton(
                   textColor: AppColors.white,
@@ -62,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(25),
               onTap: () {},
               child: Container(
-                height: 45, // give fixed height for proper centering
+                height: 45,
                 padding: const EdgeInsets.fromLTRB(20, 5, 0, 5),
                 decoration: BoxDecoration(
                   color: AppColors.white.withAlpha(50),
@@ -71,15 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: AbsorbPointer(
                   child: TextField(
                     style: text14(color: AppColors.textPrimary),
-                    textAlignVertical: TextAlignVertical.center, // 👈 important
+                    textAlignVertical: TextAlignVertical.center,
                     decoration: InputDecoration(
                       isDense: true,
                       hintText: "Search drama series",
                       hintStyle: text14(color: AppColors.textSecondary),
                       border: InputBorder.none,
-                      contentPadding:
-                          EdgeInsets.zero, // 👈 removes default offset
-                      suffixIcon: Icon(
+                      contentPadding: EdgeInsets.zero,
+                      suffixIcon: const Icon(
                         Icons.search,
                         color: AppColors.textSecondary,
                       ),
@@ -101,17 +98,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ctr.changeTab(index);
                     },
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Text(
                         ctr.tabs[index],
                         style: text14(
-                          color: isSelected
-                              ? AppColors
-                                    .error // selected color
-                              : AppColors.textSecondary,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                          color: isSelected ? AppColors.error : AppColors.textSecondary,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -121,118 +113,137 @@ class _HomeScreenState extends State<HomeScreen> {
             }),
 
             Expanded(
-              child: ListView(
-                children: [
-                  const SizedBox(height: 16),
+              child: Obx(() {
+                if (ctr.seriesResponse.value.status == Status.loading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                
+                return ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    const SizedBox(height: 16),
 
-                  /// Main poster
-                  SeriesCarousel(),
+                    /// Main poster
+                    const SeriesCarousel(),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  Text(
-                    "Series you may like",
-                    style: text16(color: AppColors.textPrimary),
-                  ),
+                    Text(
+                      "Series you may like",
+                      style: text16(color: AppColors.textPrimary),
+                    ),
 
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: List.generate(ctr.seriesList.length, (index) {
-                        final data = ctr.seriesList[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 10),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: List.generate(ctr.popularSeries.length, (index) {
+                          final data = ctr.popularSeries[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: GestureDetector(
+                              onTap: () {
+                                Get.toNamed(AppRoutes.seriesDetails, arguments: data);
+                              },
+                              child: Column(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.network(
+                                      data.posterImage ?? '',
+                                      height: 120,
+                                      width: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          height: 120,
+                                          width: 100,
+                                          color: AppColors.textSecondary,
+                                          child: const Icon(Icons.broken_image, color: Colors.white),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    width: 100,
+                                    child: Text(
+                                      data.title ?? '',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Text(
+                      "New Drama",
+                      style: text16(color: AppColors.textPrimary),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        mainAxisExtent: 220,
+                      ),
+                      itemCount: ctr.newReleaseSeries.length,
+                      itemBuilder: (context, index) {
+                        final data = ctr.newReleaseSeries[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Get.toNamed(AppRoutes.seriesDetails, arguments: data);
+                          },
                           child: Column(
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: Image.asset(
-                                  data["image"] ?? '',
-                                  height: 120,
-                                  width: 100,
+                                child: Image.network(
+                                  data.posterImage ?? '',
+                                  height: 170,
+                                  width: double.infinity,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return Container(
-                                      height: 120,
-                                      width: 100,
                                       color: AppColors.textSecondary,
+                                      height: 170,
+                                      width: double.infinity,
+                                      child: const Icon(Icons.broken_image, color: Colors.white),
                                     );
                                   },
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                data['title'] ?? '',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
+                                data.title ?? '',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.white, fontSize: 12),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         );
-                      }),
+                      },
                     ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Text(
-                    "New Drama",
-                    style: text16(color: AppColors.textPrimary),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      mainAxisExtent: 200,
-                    ),
-                    itemCount: 4,
-                    itemBuilder: (context, index) {
-                      final data = ctr.seriesList[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: Column(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.asset(
-                                data["image"] ?? '',
-                                height: 170,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: AppColors.textSecondary,
-                                    height: 170,
-                                    width: double.infinity,
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              data['title'] ?? '',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                  ],
+                );
+              }),
             ),
           ],
         ),
@@ -242,80 +253,80 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class SeriesCarousel extends StatelessWidget {
-  final List<Map<String, String>> seriesList = [
-    {
-      "image": "assets/images/image2.png",
-      "title": "Our Secret",
-      "episodes": "10 episodes",
-    },
-    {
-      "image": "assets/images/image2.png",
-      "title": "Shadow & Bone",
-      "episodes": "8 episodes",
-    },
-    {
-      "image": "assets/images/image2.png",
-      "title": "Peaky Blinders",
-      "episodes": "12 episodes",
-    },
-  ];
-
-  SeriesCarousel({super.key});
+  const SeriesCarousel({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Get.toNamed(AppRoutes.seriesDetails);
-      },
-      child: CarouselSlider.builder(
+    final HomeController ctr = Get.find<HomeController>();
+
+    return Obx(() {
+      final seriesList = ctr.popularSeries;
+
+      if (seriesList.isEmpty) {
+        if (ctr.seriesResponse.value.status == Status.loading) {
+          return const SizedBox(height: 350, child: Center(child: CircularProgressIndicator()));
+        }
+        return const Center(
+          child: Text("No series found", style: TextStyle(color: Colors.white)),
+        );
+      }
+
+      return CarouselSlider.builder(
         itemCount: seriesList.length,
         options: CarouselOptions(
           height: 350,
-          enlargeCenterPage: true, // ⭐ center card forward
+          enlargeCenterPage: true,
           viewportFraction: 0.65,
           enlargeStrategy: CenterPageEnlargeStrategy.zoom,
-          enableInfiniteScroll: true,
+          enableInfiniteScroll: seriesList.length > 1,
         ),
         itemBuilder: (context, index, realIndex) {
           final item = seriesList[index];
 
-          return Column(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
-                  item["image"]!,
-                  width: 200,
-                  height: 260,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 200,
-                      height: 260,
-                      color: AppColors.textSecondary,
-                    );
-                  },
+          return GestureDetector(
+            onTap: () {
+              Get.toNamed(
+                AppRoutes.seriesDetails,
+                arguments: item,
+              );
+            },
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    item.posterImage ?? '',
+                    width: 200,
+                    height: 260,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 200,
+                        height: 260,
+                        color: AppColors.textSecondary,
+                        child: const Icon(Icons.broken_image, color: Colors.white, size: 40),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                item["title"]!,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 12),
+                Text(
+                  item.title ?? '',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                item["episodes"]!,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  "${item.totalEpisodes ?? 0} episodes",
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
+            ),
           );
         },
-      ),
-    );
+      );
+    });
   }
 }

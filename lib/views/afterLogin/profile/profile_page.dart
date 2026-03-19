@@ -21,6 +21,7 @@ class ProfilePage extends StatelessWidget {
           backgroundGradient(),
 
           SafeArea(
+            child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -209,7 +210,7 @@ class ProfilePage extends StatelessWidget {
                 //   },
                 // ),
 
-                const Spacer(),
+                const SizedBox(height: 40),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   child: CustomButton(
@@ -222,6 +223,7 @@ class ProfilePage extends StatelessWidget {
                 ),
               ],
             ),
+          ),
           ),
         ],
       ),

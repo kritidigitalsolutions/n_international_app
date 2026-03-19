@@ -1,13 +1,34 @@
-// series_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/res/app_colors.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
+import '../../../data/api_responce_data.dart';
+import '../../../model/responce/series_res_model/episode_res_model.dart';
+import '../../../model/responce/series_res_model/series_res_model.dart';
+import '../../../viewModel/afterLogin/SeriesDetail/series_detail_controller.dart';
 
-class SeriesDetailPage extends StatelessWidget {
+class SeriesDetailPage extends StatefulWidget {
   const SeriesDetailPage({super.key});
+
+  @override
+  State<SeriesDetailPage> createState() => _SeriesDetailPageState();
+}
+
+class _SeriesDetailPageState extends State<SeriesDetailPage> {
+  final SeriesDetailController controller = Get.put(SeriesDetailController());
+  late Series series;
+
+  @override
+  void initState() {
+    super.initState();
+    series = Get.arguments as Series;
+    if (series.sId != null) {
+      controller.fetchEpisodes(series.sId!);
+      controller.checkIsFavorite(series.sId!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +40,7 @@ class SeriesDetailPage extends StatelessWidget {
             colors: [AppColors.transparent, AppColors.accentRed.withAlpha(100)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            stops: [0.0, 1.0],
+            stops: const [0.0, 1.0],
           ),
         ),
         child: SafeArea(
@@ -33,14 +54,16 @@ class SeriesDetailPage extends StatelessWidget {
                   height: size.height * 0.4,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
-                    image: const DecorationImage(
-                      image: AssetImage("assets/images/image2.png"),
+                    image: DecorationImage(
+                      image: series.posterImage != null && series.posterImage!.isNotEmpty
+                          ? NetworkImage(series.posterImage!) as ImageProvider
+                          : const AssetImage("assets/images/image2.png"),
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
 
-                /// Title + Play Button
+                /// Title + Favorite Button
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
@@ -51,27 +74,26 @@ class SeriesDetailPage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Our Secret",
+                              series.title ?? "Untitled",
                               style: text18(
                                 color: AppColors.white,
-
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              "Hindi | Tamil | Telugu | Bhojpuri | Mandarin",
+                              series.languages?.join(" | ") ?? "No language info",
                               style: text12(color: AppColors.textSecondary),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.star,
                                   color: AppColors.primary,
                                   size: 16,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
                                   "4.8/5 (200k+ reviews)",
                                   style: text11(color: AppColors.textSecondary),
@@ -81,8 +103,18 @@ class SeriesDetailPage extends StatelessWidget {
                           ],
                         ),
                       ),
-
-                      CustomGradientButton(title: "Play now", onPressed: () {}),
+                      Obx(() => IconButton(
+                        icon: Icon(
+                          controller.isFavorite.value ? Icons.favorite : Icons.favorite_border,
+                          color: controller.isFavorite.value ? AppColors.error : AppColors.white,
+                          size: 30,
+                        ),
+                        onPressed: () {
+                          if (series.sId != null) {
+                            controller.toggleFavorite(series.sId!);
+                          }
+                        },
+                      )),
                     ],
                   ),
                 ),
@@ -108,13 +140,12 @@ class SeriesDetailPage extends StatelessWidget {
                         "About This Series",
                         style: text16(
                           color: AppColors.white,
-
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
-                        "Watch full episodes of Our Secret every day and witness an emotional love story between two souls.",
+                        "Watch full episodes of ${series.title} every day and witness an emotional love story between two souls.",
                         style: text13(color: AppColors.textPrimary),
                       ),
                     ],
@@ -126,11 +157,34 @@ class SeriesDetailPage extends StatelessWidget {
                 /// Episodes List
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: List.generate(5, (index) {
-                      return _episodeTile(index + 1);
-                    }),
-                  ),
+                  child: Obx(() {
+                    switch (controller.episodesResponse.value.status) {
+                      case Status.loading:
+                        return const Center(child: CircularProgressIndicator());
+                      case Status.error:
+                        return Center(
+                          child: Text(
+                            controller.episodesResponse.value.message ?? "Error loading episodes",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        );
+                      case Status.completed:
+                        final episodes = controller.episodesResponse.value.data?.episodes ?? [];
+                        if (episodes.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              "No episodes found",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }
+                        return Column(
+                          children: episodes.map((episode) => _episodeTile(episode)).toList(),
+                        );
+                      default:
+                        return const SizedBox();
+                    }
+                  }),
                 ),
 
                 const SizedBox(height: 20),
@@ -184,10 +238,18 @@ class SeriesDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _episodeTile(int index) {
+  Widget _episodeTile(Episode episode) {
     return GestureDetector(
       onTap: () {
-        Get.toNamed(AppRoutes.videoPlay);
+        if (!(episode.isLocked ?? false)) {
+          controller.playEpisode(episode.id!);
+        } else {
+          Get.snackbar("Locked", "Please unlock this episode to watch",
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColors.error.withOpacity(0.8),
+              colorText: Colors.white
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -204,10 +266,10 @@ class SeriesDetailPage extends StatelessWidget {
               height: 70,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                image: const DecorationImage(
-                  image: NetworkImage(
-                    "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e",
-                  ),
+                image: DecorationImage(
+                  image: episode.thumbnail != null && episode.thumbnail!.isNotEmpty
+                      ? NetworkImage(episode.thumbnail!)
+                      : const NetworkImage("https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e"),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -220,26 +282,29 @@ class SeriesDetailPage extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        "Episode $index",
+                        "Episode ${episode.episodeNumber}",
                         style: text15(
                           color: AppColors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(width: 10),
-                      Icon(Icons.lock, size: 15, color: AppColors.error),
+                      const SizedBox(width: 10),
+                      if (episode.isLocked ?? false)
+                        const Icon(Icons.lock, size: 15, color: AppColors.error),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Some episode description",
+                    episode.title ?? "No title",
                     style: text12(color: AppColors.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
             Text(
-              "Play Now",
+              episode.isLocked ?? false ? "Unlock" : "Play Now",
               style: text15(
                 color: AppColors.error,
                 fontWeight: FontWeight.bold,
