@@ -30,4 +30,10 @@ class AppRoutes {
 
   static const videoPlay = "/videoPlay";
   static const fullProfile = "/fullProfile";
+  static const editProfile = "/editProfile";
+  
+  static const privacyPolicy = "/privacyPolicy";
+  static const termsConditions = "/termsConditions";
+  static const aboutCompany = "/aboutCompany";
+  static const contactUs = "/contactUs";
 }

@@ -1,10 +1,5 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
-part of 'userdetail.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
+import 'package:hive/hive.dart';
+import 'package:n_square_international/utils/hive_service/userdetail.dart';
 
 class UserDetailsAdapter extends TypeAdapter<UserDetails> {
   @override
@@ -12,35 +7,41 @@ class UserDetailsAdapter extends TypeAdapter<UserDetails> {
 
   @override
   UserDetails read(BinaryReader reader) {
+
     final numOfFields = reader.readByte();
+
     final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+      for (int i = 0; i < numOfFields; i++)
+        reader.readByte(): reader.read(),
     };
+
     return UserDetails(
       name: fields[0] as String,
-      dob: fields[1] as String,
-      gender: fields[2] as String,
-      image: fields[3] as String?,
-      token: fields[4] as String,
-      phone: fields[5] as String?,
+      email: fields[1] as String,
+      image: fields[2] as String?,
+      token: fields[3] as String,
+      phone: fields[4] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserDetails obj) {
+
     writer
-      ..writeByte(6)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.name)
+
       ..writeByte(1)
-      ..write(obj.dob)
+      ..write(obj.email)
+
       ..writeByte(2)
-      ..write(obj.gender)
-      ..writeByte(3)
       ..write(obj.image)
-      ..writeByte(4)
+
+      ..writeByte(3)
       ..write(obj.token)
-      ..writeByte(5)
+
+      ..writeByte(4)
       ..write(obj.phone);
   }
 
@@ -50,7 +51,7 @@ class UserDetailsAdapter extends TypeAdapter<UserDetails> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is UserDetailsAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
+          other is UserDetailsAdapter &&
+              runtimeType == other.runtimeType &&
+              typeId == other.typeId;
 }

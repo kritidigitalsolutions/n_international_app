@@ -31,7 +31,7 @@ class ProfilePage extends StatelessWidget {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          Get.offAllNamed(AppRoutes.fullProfile);
+                          Get.toNamed(AppRoutes.fullProfile);
                         },
                         child: const CircleAvatar(
                           radius: 22,
@@ -125,7 +125,7 @@ class ProfilePage extends StatelessWidget {
                                   Get.toNamed(AppRoutes.recharge);
                                 },
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 15,
                                     vertical: 12,
                                   ),
@@ -183,14 +183,43 @@ class ProfilePage extends StatelessWidget {
                   },
                 ),
                 _buildMenuItem(
-                  icon: Icons.settings,
-                  title: 'Settings',
-                  onTap: () {
-                    Get.toNamed(AppRoutes.setting);
-                  },
+                  icon: Icons.privacy_tip_outlined,title: 'Privacy Policy',
+                  onTap: () => Get.toNamed(AppRoutes.privacyPolicy),
                 ),
+                _buildMenuItem(
+                  icon: Icons.description_outlined,
+                  title: 'Terms & Conditions',
+                  onTap: () => Get.toNamed(AppRoutes.termsConditions),
+                ),
+                _buildMenuItem(
+                  icon: Icons.people_alt_outlined,
+                  title: 'About Us',
+                  onTap: () => Get.toNamed(AppRoutes.aboutCompany),
+                ),
+                _buildMenuItem(
+                  icon: Icons.phone_bluetooth_speaker,
+                  title: 'Contact Us',
+                  onTap: () => Get.toNamed(AppRoutes.contactUs),
+                ),
+                // _buildMenuItem(
+                //   icon: Icons.settings,
+                //   title: 'Settings',
+                //   onTap: () {
+                //     Get.toNamed(AppRoutes.setting);
+                //   },
+                // ),
 
                 const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  child: CustomButton(
+                    title: 'Logout',
+                    textColor: AppColors.error,
+                    onPressed: () {
+                      _showLogoutDialog(context, userController);
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -215,6 +244,63 @@ class ProfilePage extends StatelessWidget {
         ),
         onTap: onTap,
       ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, UserController userController) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: const Color(0xFF1A1A1A),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.logout_rounded, color: AppColors.error, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  "Logout",
+                  style: text20(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Are you sure you want to logout? You will need to login again to access your account.",
+                  textAlign: TextAlign.center,
+                  style: text14(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text("Cancel", style: text16(color: AppColors.textPrimary)),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          userController.logout();
+                        },
+                        child: Text("Logout", style: text16(color: AppColors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

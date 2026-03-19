@@ -8,6 +8,7 @@ import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/bottom_navigationbar.dart';
 import 'package:n_square_international/utils/hive_service/userdetail.dart';
+import 'package:n_square_international/utils/hive_service/userdetail.g.dart';
 import 'package:n_square_international/viewModel/afterLogin/bottom_nac_controller.dart';
 
 Future<void> main() async {

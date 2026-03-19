@@ -10,7 +10,10 @@ class LoginController extends GetxController {
   final TextEditingController ctr = TextEditingController();
   final GlobalKey<FormState> formKey = GlobalKey();
   var isLoading = false.obs;
+  var isPrivacyAccepted = false.obs;
+  
   final _repo = AuthRepo();
+  
   Future<void> submit() async {
     if (!formKey.currentState!.validate()) {
       CustomSnackbar.showError(
@@ -19,6 +22,15 @@ class LoginController extends GetxController {
       );
       return;
     }
+    
+    if (!isPrivacyAccepted.value) {
+      CustomSnackbar.showError(
+        title: "Action Required",
+        message: "Please check the privacy policy checkbox",
+      );
+      return;
+    }
+    
     isLoading.value = true;
     try {
       await _repo.sendOtp(ctr.text.trim());
@@ -102,7 +114,7 @@ class OtpController extends GetxController {
     isLoading.value = true;
     try {
       final res = await _repo.verfiyOtp(phone, otp);
-      final isNewUser = res["isNewUser"];
+      final isNewUser = res["isNewUser"] ?? false;
 
       CustomSnackbar.showSuccess(
         title: "Success",
@@ -120,19 +132,22 @@ class OtpController extends GetxController {
 
       final user = UserDetails(
         name: userJson["name"] ?? "",
-        dob: userJson["dob"] ?? "",
-        gender: userJson["gender"] ?? "",
         token: token,
         phone: userJson["phone"] ?? phone,
+        email: userJson["email"] ?? "",
       );
 
       await HiveService.saveUser(user);
 
-      // Navigate to full name / profile page
-      Get.toNamed(
-        AppRoutes.fullName,
-        arguments: phone,
-      );
+      // Navigate based on isNewUser
+      if (isNewUser) {
+        Get.offAllNamed(
+          AppRoutes.fullName,
+          arguments: phone,
+        );
+      } else {
+        Get.offAllNamed(AppRoutes.myHome);
+      }
 
     } catch (e) {
       CustomSnackbar.showError(

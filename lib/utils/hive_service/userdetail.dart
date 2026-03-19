@@ -1,34 +1,29 @@
-
 import 'package:hive/hive.dart';
 
-part 'userdetail.g.dart';
 
 @HiveType(typeId: 0)
 class UserDetails extends HiveObject {
+
   @HiveField(0)
   String name;
 
   @HiveField(1)
-  String dob;
+  String email;
 
   @HiveField(2)
-  String gender;
-
-  @HiveField(3)
   String? image;
 
-  @HiveField(4)
+  @HiveField(3)
   String token;
 
-  @HiveField(5)
+  @HiveField(4)
   String? phone;
 
   UserDetails({
     required this.name,
-    required this.dob,
-    required this.gender,
+    required this.email,
     this.image,
     required this.token,
-    required this.phone,
+    this.phone,
   });
 }

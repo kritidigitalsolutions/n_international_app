@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:n_square_international/res/app_url.dart';
+import 'package:n_square_international/routes/app_routes.dart';
 import '../../../utils/hive_service/hive_service.dart';
 
 class UserController extends GetxController {
@@ -32,5 +33,10 @@ class UserController extends GetxController {
     } catch (e) {
       print("Error fetching user name: $e");
     }
+  }
+  /// logout user
+  void logout() async {
+    await HiveService.logout();
+    Get.offAllNamed(AppRoutes.login);
   }
 }
