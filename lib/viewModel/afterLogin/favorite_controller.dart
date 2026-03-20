@@ -8,11 +8,31 @@ class FavoriteController extends GetxController {
   final SeriesRepo _repo = SeriesRepo();
   
   var favoriteResponse = ApiResponse<FavoriteResModel>.loading().obs;
+  var favoriteSongs = <Map<String, String>>[].obs;
+
 
   @override
   void onInit() {
     super.onInit();
     fetchFavorites();
+    // loadDummySongs();
+  }
+
+  void loadDummySongs() {
+    favoriteSongs.value = [
+      {
+        "title": "Demo Song 1",
+        "artist": "Artist 1",
+      },
+      {
+        "title": "Demo Song 2",
+        "artist": "Artist 2",
+      },
+      {
+        "title": "Demo Song 3",
+        "artist": "Artist 3",
+      },
+    ];
   }
 
   Future<void> fetchFavorites() async {

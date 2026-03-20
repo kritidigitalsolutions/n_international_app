@@ -129,8 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
 
                     Text(
-                      "Series you may like",
-                      style: text16(color: AppColors.textPrimary),
+                "${ctr.tabs[ctr.selectedTabIndex.value]} Series",
+                style: text16(color: AppColors.textPrimary),
                     ),
 
                     const SizedBox(height: 10),
@@ -138,8 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: List.generate(ctr.popularSeries.length, (index) {
-                          final data = ctr.popularSeries[index];
+                        children: List.generate(ctr.currentSeriesList.length, (index) {
+                          final data = ctr.currentSeriesList[index];
                           return Padding(
                             padding: const EdgeInsets.only(right: 10),
                             child: GestureDetector(
@@ -260,7 +260,7 @@ class SeriesCarousel extends StatelessWidget {
     final HomeController ctr = Get.find<HomeController>();
 
     return Obx(() {
-      final seriesList = ctr.popularSeries;
+      final seriesList = ctr.currentSeriesList;
 
       if (seriesList.isEmpty) {
         if (ctr.seriesResponse.value.status == Status.loading) {

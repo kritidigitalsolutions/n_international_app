@@ -2,7 +2,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:n_square_international/data/api_responce_data.dart';
 import 'package:n_square_international/res/app_colors.dart';
+import 'package:n_square_international/res/app_url.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/custom_button.dart';
@@ -23,7 +25,7 @@ class ListenSongsPage extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Center(
                   child: RichText(
                     text: TextSpan(
@@ -46,97 +48,80 @@ class ListenSongsPage extends StatelessWidget {
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
                               print("Listen Songs tapped");
-                              Get.toNamed(AppRoutes.songList);
                             },
                         ),
                       ],
                     ),
                   ),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
 
                 Obx(
-                  () => Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center, // important
-                    children: [
-                      SizedBox(width: 10),
-                      // Language Popup
-                      PopupMenuButton<String>(
-                        padding: EdgeInsets.zero, // remove internal padding
-                        onSelected: (value) {
-                          controller.selectedLanguage.value = value;
-                          controller.getSongsByLanguage(value);
-                          controller.toggle(0);
-                        },
-                        color: AppColors.card,
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: "Hindi",
-                            child: Text("Hindi", style: text14()),
-                          ),
-                          PopupMenuItem(
-                            value: "English",
-                            child: Text("English", style: text14()),
-                          ),
-                          PopupMenuItem(
-                            value: "Punjabi",
-                            child: Text("Punjabi", style: text14()),
-                          ),
-                          PopupMenuItem(
-                            value: "Tamil",
-                            child: Text("Tamil", style: text14()),
-                          ),
-                          PopupMenuItem(
-                            value: "Telugu",
-                            child: Text("Telugu", style: text14()),
-                          ),
-                        ],
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                  () => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Row(
                           children: [
-                            Text(
-                              controller.selectedLanguage.value.isEmpty
-                                  ? "Language"
-                                  : controller.selectedLanguage.value,
-                              style: text14(
-                                color: controller.index.value == 0
-                                    ? AppColors.error
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.keyboard_arrow_down,
-                              size: 16,
-                              color: controller.index.value == 0
+                            CustomTextButton(
+                              textColor: controller.index.value == 0
                                   ? AppColors.error
-                                  : AppColors.textPrimary,
+                                  : AppColors.white,
+                              title: "Songs",
+                              onPressed: () {
+                                controller.toggle(0);
+                              },
+                            ),
+                            const Text("|", style: TextStyle(color: AppColors.white)),
+                            CustomTextButton(
+                              textColor: controller.index.value == 1
+                                  ? AppColors.error
+                                  : AppColors.white,
+                              title: "My Playlist",
+                              onPressed: () {
+                                controller.toggle(1);
+                              },
                             ),
                           ],
                         ),
-                      ),
-
-                      const SizedBox(width: 8),
-                      Text("|", style: text14(color: AppColors.white)),
-                      const SizedBox(width: 8),
-
-                      // My Playlist Button
-                      CustomTextButton(
-                        textColor: controller.index.value == 1
-                            ? AppColors.error
-                            : AppColors.white,
-                        title: "My Playlist",
-                        onPressed: () {
-                          controller.toggle(1);
-                        },
-                      ),
-                    ],
+                        // Improved Dropdown UI
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.white.withOpacity(0.05),
+                            border: Border.all(color: AppColors.white.withOpacity(0.2)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: controller.selectedLanguage.value,
+                              dropdownColor: const Color(0xFF1A1A1A),
+                              icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.white),
+                              style: text14(color: AppColors.white),
+                              items: controller.languages.map((String lang) {
+                                return DropdownMenuItem<String>(
+                                  value: lang,
+                                  child: Text(lang),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  controller.changeLanguage(newValue);
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                SizedBox(height: 10),
 
-                /// Tabs (ONLY this needs Obx)
+                const SizedBox(height: 10),
+
+                /// Tabs (Now always shown)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -149,96 +134,81 @@ class ListenSongsPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-                /// Song list (NO Obx needed)
-                ///
-                Obx(() {
-                  if (controller.index.value == 0) {
-                    return Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(8),
-                        itemCount: controller.songs.length,
-                        itemBuilder: (context, index) {
-                          final song = controller.songs[index];
-                          return ListTile(
-                            onTap: () {
-                              Get.toNamed(AppRoutes.musicPlay);
-                            },
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                song['imageUrl'],
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            title: Text(
-                              song['title'],
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            subtitle: Text(
-                              song['artist'],
-                              style: text12(color: AppColors.textSecondary),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(
-                                Icons.more_vert,
-                                color: AppColors.textSecondary,
-                              ),
-                              onPressed: () =>
-                                  controller.showMoreOptions(index),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  }
+                /// Song list
+                Expanded(
+                  child: Obx(() {
+                    final isPlaylist = controller.index.value == 1;
+                    final response = isPlaylist ? controller.playlistResponse.value : controller.songResponse.value;
+                    final songs = isPlaylist ? controller.displayPlaylist : controller.displaySongs;
 
-                  return Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(8),
-                      itemCount: 5,
-                      itemBuilder: (context, index) {
-                        final song = controller.songs[index];
-                        return ListTile(
-                          onTap: () {
-                            Get.toNamed(AppRoutes.musicPlay);
-                          },
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              song['imageUrl'],
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          title: Text(
-                            song['title'],
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          subtitle: Text(
-                            song['artist'],
-                            style: text12(color: AppColors.textSecondary),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(
-                              Icons.more_vert,
-                              color: AppColors.textSecondary,
-                            ),
-                            onPressed: () => controller.showMoreOptions(index),
+                    switch (response.status) {
+                      case Status.loading:
+                        return const Center(child: CircularProgressIndicator());
+                      case Status.error:
+                        return Center(
+                          child: Text(
+                            response.message ?? "Error",
+                            style: const TextStyle(color: Colors.white),
                           ),
                         );
-                      },
-                    ),
-                  );
-                }),
+                      case Status.completed:
+                        if (songs.isEmpty) {
+                          return Center(
+                            child: Text(
+                              isPlaylist ? "No songs found in this category in your playlist" : "No songs found in this category",
+                              style: const TextStyle(color: AppColors.textSecondary),
+                            ),
+                          );
+                        }
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(8),
+                          itemCount: songs.length,
+                          itemBuilder: (context, index) {
+                            final song = songs[index];
+                            return ListTile(
+                              onTap: () {
+                                Get.toNamed(AppRoutes.musicPlay, arguments: song);
+                              },
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  AppUrls.getImageUrl(song.thumbnailUrl),
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: AppColors.white.withOpacity(0.1),
+                                      child: const Icon(Icons.music_note, color: Colors.white54),
+                                    );
+                                  },
+                                ),
+                              ),
+                              title: Text(
+                                song.title ?? "Unknown Title",
+                                style: const TextStyle(color: AppColors.textPrimary),
+                              ),
+                              subtitle: Text(
+                                song.artist ?? "Unknown Artist",
+                                style: text12(color: AppColors.textSecondary),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+                                onPressed: () => controller.showMoreOptions(index, isPlaylist: isPlaylist),
+                              ),
+                            );
+                          },
+                        );
+                      default:
+                        return const SizedBox();
+                    }
+                  }),
+                ),
               ],
             ),
           ),
@@ -246,44 +216,6 @@ class ListenSongsPage extends StatelessWidget {
       ),
     );
   }
-
-  // Widget songListCard(){
-  //   return  Expanded(
-  //                 child: ListView.builder(
-  //                   padding: const EdgeInsets.all(8),
-  //                   itemCount: controller.songs.length,
-  //                   itemBuilder: (context, index) {
-  //                     final song = controller.songs[index];
-  //                     return ListTile(
-  //                       leading: ClipRRect(
-  //                         borderRadius: BorderRadius.circular(8),
-  //                         child: Image.network(
-  //                           song['imageUrl'],
-  //                           width: 60,
-  //                           height: 60,
-  //                           fit: BoxFit.cover,
-  //                         ),
-  //                       ),
-  //                       title: Text(
-  //                         song['title'],
-  //                         style: const TextStyle(color: Colors.white),
-  //                       ),
-  //                       subtitle: Text(
-  //                         song['artist'],
-  //                         style: TextStyle(color: Colors.grey[400]),
-  //                       ),
-  //                       trailing: IconButton(
-  //                         icon: const Icon(
-  //                           Icons.more_vert,
-  //                           color: Colors.white70,
-  //                         ),
-  //                         onPressed: () => controller.showMoreOptions(index),
-  //                       ),
-  //                     );
-  //                   },
-  //                 ),
-  //               );
-  // }
 
   Widget _buildTabButton(
     String label,
@@ -295,7 +227,7 @@ class ListenSongsPage extends StatelessWidget {
       return GestureDetector(
         onTap: () => controller.changeTab(index),
         child: Container(
-          margin: EdgeInsets.only(left: 10),
+          margin: const EdgeInsets.only(left: 10),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: AppColors.transparent,

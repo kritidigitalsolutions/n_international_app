@@ -303,6 +303,24 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                 ],
               ),
             ),
+            /// ⬇️ DOWNLOAD BUTTON
+            IconButton(
+              icon: const Icon(Icons.download, color: Colors.white),
+              onPressed: () {
+                if (!(episode.isLocked ?? false)) {
+                  // 👉 Call your download function
+                  print("Download episode: ${episode.id}");
+                } else {
+                  Get.snackbar(
+                    "Locked",
+                    "Please unlock this episode to download",
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: AppColors.error.withOpacity(0.8),
+                    colorText: Colors.white,
+                  );
+                }
+              },
+            ),
             Text(
               episode.isLocked ?? false ? "Unlock" : "Play Now",
               style: text15(

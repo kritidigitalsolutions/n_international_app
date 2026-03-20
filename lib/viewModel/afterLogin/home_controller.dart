@@ -9,12 +9,41 @@ import '../../repo/series_repo.dart';
 class HomeController extends GetxController {
   final SeriesRepo _repo = SeriesRepo();
 
+  /// API State
   var seriesResponse = ApiResponse<SeriesResModel>.loading().obs;
+
+  /// Category Lists
   var popularSeries = <Series>[].obs;
   var latestSeries = <Series>[].obs;
   var romanticSeries = <Series>[].obs;
   var revengeSeries = <Series>[].obs;
   var newReleaseSeries = <Series>[].obs;
+
+  /// Tabs
+  var selectedTabIndex = 0.obs;
+
+  final List<String> tabs = [
+    "Popular",
+    "Latest",
+    "Romantic",
+    "Revenge Drama",
+  ];
+
+  /// 🔥 Dynamic List based on selected tab
+  List<Series> get currentSeriesList {
+    switch (selectedTabIndex.value) {
+      case 0:
+        return popularSeries;
+      case 1:
+        return latestSeries;
+      case 2:
+        return romanticSeries;
+      case 3:
+        return revengeSeries;
+      default:
+        return popularSeries;
+    }
+  }
 
   @override
   void onInit() {
@@ -22,24 +51,48 @@ class HomeController extends GetxController {
     fetchSeries();
   }
 
+  /// API Call
   Future<void> fetchSeries() async {
     seriesResponse.value = ApiResponse.loading();
+
     try {
       final response = await _repo.fetchSeries();
       seriesResponse.value = ApiResponse.completed(response);
 
       if (response.series != null) {
-        popularSeries.assignAll(response.series!.where((s) => s.isPopular ?? false).toList());
-        latestSeries.assignAll(response.series!.where((s) => s.isLatest ?? false).toList());
-        romanticSeries.assignAll(response.series!.where((s) => s.isRomantic ?? false).toList());
-        revengeSeries.assignAll(response.series!.where((s) => s.isRevengeDrama ?? false).toList());
-        newReleaseSeries.assignAll(response.series!.where((s) => s.isNewRelease ?? false).toList());
+        final list = response.series!;
+
+        popularSeries.assignAll(
+          list.where((s) => s.isPopular ?? false).toList(),
+        );
+
+        latestSeries.assignAll(
+          list.where((s) => s.isLatest ?? false).toList(),
+        );
+
+        romanticSeries.assignAll(
+          list.where((s) => s.isRomantic ?? false).toList(),
+        );
+
+        revengeSeries.assignAll(
+          list.where((s) => s.isRevengeDrama ?? false).toList(),
+        );
+
+        newReleaseSeries.assignAll(
+          list.where((s) => s.isNewRelease ?? false).toList(),
+        );
       }
     } catch (e) {
       seriesResponse.value = ApiResponse.error(e.toString());
     }
   }
 
+  /// Tab Change
+  void changeTab(int index) {
+    selectedTabIndex.value = index;
+  }
+
+  /// Snackbar
   Future<void> checkFirstTimeSnackbar() async {
     Future.delayed(const Duration(milliseconds: 400), () {
       Get.showSnackbar(
@@ -94,22 +147,5 @@ class HomeController extends GetxController {
         ),
       );
     });
-  }
-
-  final List<Map<String, String>> seriesList = [
-    {"image": "assets/images/image2.png", "title": "Our Secret"},
-    {"image": "assets/images/image1.png", "title": "Shadow & Bone"},
-    {"image": "assets/images/image3.png", "title": "Peaky Blinders"},
-    {"image": "assets/images/image2.png", "title": "Our Secret"},
-    {"image": "assets/images/image1.png", "title": "Shadow & Bone"},
-    {"image": "assets/images/image3.png", "title": "Peaky Blinders"},
-  ];
-
-  var selectedTabIndex = 0.obs;
-
-  final List<String> tabs = ["Popular", "Latest", "Romantic", "Revenge Drama"];
-
-  void changeTab(int index) {
-    selectedTabIndex.value = index;
   }
 }

@@ -1,203 +1,246 @@
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:get/get.dart';
+import 'package:n_square_international/data/api_responce_data.dart';
 import 'package:n_square_international/res/app_colors.dart';
+import 'package:n_square_international/res/app_url.dart';
 import 'package:n_square_international/utils/textStyle.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:vdocipher_flutter/vdocipher_flutter.dart';
 
-class MusicPlayerPage extends StatefulWidget {
+import '../../../viewModel/afterLogin/song_controller/music_player_controller.dart';
+import '../../../viewModel/afterLogin/song_controller/song_controllers.dart';
+
+class MusicPlayerPage extends StatelessWidget {
   const MusicPlayerPage({super.key});
 
   @override
-  State<MusicPlayerPage> createState() => _MusicPlayerPageState();
-}
-
-class _MusicPlayerPageState extends State<MusicPlayerPage> {
-  final AudioPlayer _player = AudioPlayer();
-
-  @override
-  void initState() {
-    super.initState();
-    _initPlayer();
-  }
-
-  Future<void> _initPlayer() async {
-    await _player.setUrl(
-      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    );
-  }
-
-  @override
-  void dispose() {
-    _player.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context).size;
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.transparent, AppColors.accentRed.withAlpha(100)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            stops: [0.0, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
+    final MusicPlayerController controller =
+    Get.put(MusicPlayerController());
+    final SongListController favController = Get.put(SongListController());
 
-              /// Title
-              // RichText(
-              //   text: const TextSpan(
-              //     children: [
-              //       TextSpan(
-              //         text: "Drama Series | ",
-              //         style: TextStyle(color: Colors.white),
-              //       ),
-              //       TextSpan(
-              //         text: "Listen Songs",
-              //         style: TextStyle(color: Colors.red),
-              //       ),
-              //     ],
-              //   ),
-              // ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final mediaQuery = MediaQuery.of(context).size;
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.keyboard_arrow_down,
+              color: AppColors.white, size: 30),
+          onPressed: () => Get.back(),
+        ),
+        centerTitle: true,
+        title: Text(
+          "NOW PLAYING",
+          style: text14(
+            color: AppColors.white,
+            fontWeight: FontWeight.bold,
+          ).copyWith(letterSpacing: 2),
+        ),
+      ),
+      body: Stack(
+        children: [
+          _backgroundGradient(),
+
+          /// 🔥 MAIN CONTENT
+          Obx(() {
+            final response = controller.songPlayResponse.value;
+
+            /// Loading
+            if (response.status == Status.loading) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.error,
+                ),
+              );
+            }
+
+            /// Error
+            if (response.status == Status.error) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Text(
+                    response.message ?? "Error loading song",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              );
+            }
+
+            final playData = response.data?.playData;
+
+            if (playData == null) {
+              return const Center(
+                child: Text(
+                  "No play data available",
+                  style: TextStyle(color: Colors.white),
+                ),
+              );
+            }
+
+            final playback = playData.vdoCipherPlayback;
+
+            return SafeArea(
+              child: Padding(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 20),
+
+                    /// 🎬 VdoCipher Player (MAIN)
+                    if (playback != null)
+                      Container(
+                        height: mediaQuery.height * 0.30,
+                        decoration: BoxDecoration(
+                          borderRadius:
+                          BorderRadius.circular(20),
+                          color: Colors.black,
+                        ),
+                        child: ClipRRect(
+                          borderRadius:
+                          BorderRadius.circular(20),
+                          child: VdoPlayer(
+                            embedInfo: EmbedInfo.streaming(
+                              otp: playback.otp ?? "",
+                              playbackInfo: playback.playbackInfo ?? "",
+                            ),
+                            onPlayerCreated: (controller) {
+                              // optional
+                            },
+                            onError: (error) {
+                              print("Vdo Error: ${error.message}");
+                            },
+                          )
+
+                        ),
+                      )
+                    else
+                      Container(
+                        height: mediaQuery.height * 0.30,
+                        decoration: BoxDecoration(
+                          borderRadius:
+                          BorderRadius.circular(20),
+                          color: AppColors.white
+                              .withOpacity(0.1),
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.music_note,
+                              color: Colors.white54,
+                              size: 80),
+                        ),
+                      ),
+
+                    const SizedBox(height: 30),
+
+                    /// 🎵 Song Info
+                    Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "HUSN",
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 18,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                playData.title ??
+                                    "Unknown Title",
+                                style: text24(
+                                  color: AppColors.white,
+                                  fontWeight:
+                                  FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow:
+                                TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                playData.artist ??
+                                    "Unknown Artist",
+                                style: text16(
+                                    color: AppColors
+                                        .textSecondary),
+                                maxLines: 1,
+                                overflow:
+                                TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          "Anuv Jain",
-                          style: TextStyle(color: AppColors.grey),
+
+                        /// ❤️ Favorite
+                        Obx(() => IconButton(
+                          icon: Icon(
+                            favController.isFavorite.value
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: favController.isFavorite.value
+                                ? Colors.red
+                                : AppColors.white,
+                            size: 28,
+                          ),
+                          onPressed: () {
+                            if (playData.id != null) {
+                              favController.toggleFavorite(playData.id!);
+                            }
+                          },
+                        )),
+
+                        /// 🔗 Share
+                        IconButton(
+                          icon: const Icon(
+                            Icons.share_outlined,
+                            color: AppColors.white,
+                            size: 28,
+                          ),
+                          onPressed: () {
+                            Share.share(
+                              "🎧 ${playData.title} by ${playData.artist}\n\nWatch now on N Square International!",
+                            );
+                          },
                         ),
                       ],
                     ),
-                    Row(
-                      children: [
-                        Icon(Icons.favorite_border, color: AppColors.white),
-                        SizedBox(width: 10),
-                        Icon(Icons.share, color: AppColors.white),
-                      ],
+
+                    const Spacer(),
+
+                    /// ⚠️ NOTE (Optional UI message)
+                    Text(
+                      "Secure streaming powered by VdoCipher",
+                      style: text12(
+                          color:
+                          AppColors.textSecondary),
                     ),
+
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+            );
+          }),
+        ],
+      ),
+    );
+  }
 
-              /// Album Image
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                height: mediaQuery.height * 0.55,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  image: const DecorationImage(
-                    image: NetworkImage(
-                      "https://i.ytimg.com/vi/gJLVTKhTnog/maxresdefault.jpg",
-                    ),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: const Center(
-                  child: CircleAvatar(
-                    radius: 30,
-                    backgroundColor: AppColors.error,
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: AppColors.white,
-                      size: 35,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// Song Info
-              const SizedBox(height: 10),
-
-              /// Progress Bar
-              StreamBuilder<Duration>(
-                stream: _player.positionStream,
-                builder: (context, snapshot) {
-                  final position = snapshot.data ?? Duration.zero;
-                  final total = _player.duration ?? Duration.zero;
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: ProgressBar(
-                      progress: position,
-                      total: total,
-                      onSeek: (duration) {
-                        _player.seek(duration);
-                      },
-                      baseBarColor: AppColors.grey,
-                      progressBarColor: AppColors.error,
-                      thumbColor: AppColors.error,
-                      timeLabelTextStyle: text15(),
-                    ),
-                  );
-                },
-              ),
-
-              /// Controls
-              StreamBuilder<PlayerState>(
-                stream: _player.playerStateStream,
-                builder: (context, snapshot) {
-                  final isPlaying = snapshot.data?.playing ?? false;
-
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.skip_previous,
-                          color: AppColors.white,
-                          size: 30,
-                        ),
-                        onPressed: () {},
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          isPlaying ? Icons.pause_circle : Icons.play_circle,
-                          color: AppColors.white,
-                          size: 50,
-                        ),
-                        onPressed: () {
-                          if (isPlaying) {
-                            _player.pause();
-                          } else {
-                            _player.play();
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.skip_next,
-                          color: AppColors.white,
-                          size: 30,
-                        ),
-                        onPressed: () {},
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
+  /// 🎨 Background Gradient
+  Widget _backgroundGradient() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFF0D0D0D),
+            Color(0xFF1A0000),
+            Color(0xFF000000),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
     );

@@ -39,6 +39,19 @@ class AppUrls {
   static String addFavorite(String seriesId) => "$favoriteList/$seriesId";
 
   //-----------------------------------------------------------
+  // Audio / Songs
+  //-----------------------------------------------
+  static const String audioSongs = "$baseUrl/audio/songs";
+  static const String audioPlaylist = "$baseUrl/audio/playlist";
+  static String togglePlaylist(String songId) => "$audioPlaylist/$songId";
+  static String playSong(String songId) => "$audioSongs/$songId/play";
+  //-----------------------------------------------------------
+  //Songs Favorites
+  //-----------------------------------------------
+  static const String favoriteSong = "$baseUrl/audio/favorites";
+  static String deleteFavoriteSong(String songid) => "$favoriteSong/$songid";
+  static String addFavoriteSong(String songid) => "$favoriteSong/$songid";
+  //-----------------------------------------------------------
   // images
   //-----------------------------------------------
   static String getImageUrl(String? url) {
