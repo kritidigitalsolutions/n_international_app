@@ -1,13 +1,14 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:n_square_international/data/api_responce_data.dart';
 import 'package:n_square_international/res/app_colors.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import 'package:n_square_international/viewModel/afterLogin/home_controller.dart';
 
-import '../../../data/api_responce_data.dart';
+import '../../../res/app_url.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -129,8 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
 
                     Text(
-                "${ctr.tabs[ctr.selectedTabIndex.value]} Series",
-                style: text16(color: AppColors.textPrimary),
+                      "${ctr.tabs[ctr.selectedTabIndex.value]} Series",
+                      style: text16(color: AppColors.textPrimary),
                     ),
 
                     const SizedBox(height: 10),
@@ -151,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
                                     child: Image.network(
-                                      data.posterImage ?? '',
+                                      AppUrls.getImageUrl(data.posterImage),
                                       height: 120,
                                       width: 100,
                                       fit: BoxFit.cover,
@@ -214,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
                                 child: Image.network(
-                                  data.posterImage ?? '',
+                                  AppUrls.getImageUrl(data.posterImage),
                                   height: 170,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
@@ -295,7 +296,7 @@ class SeriesCarousel extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Image.network(
-                    item.posterImage ?? '',
+                    AppUrls.getImageUrl(item.posterImage),
                     width: 200,
                     height: 260,
                     fit: BoxFit.cover,

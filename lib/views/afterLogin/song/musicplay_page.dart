@@ -175,22 +175,22 @@ class MusicPlayerPage extends StatelessWidget {
                         ),
 
                         /// ❤️ Favorite
-                        Obx(() => IconButton(
-                          icon: Icon(
-                            favController.isFavorite.value
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            color: favController.isFavorite.value
-                                ? Colors.red
-                                : AppColors.white,
-                            size: 28,
-                          ),
-                          onPressed: () {
-                            if (playData.id != null) {
-                              favController.toggleFavorite(playData.id!);
-                            }
-                          },
-                        )),
+                        Obx(() {
+                          final isFav = favController.favoriteMap[playData.id] ?? false;
+
+                          return IconButton(
+                            icon: Icon(
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              color: isFav ? Colors.red : AppColors.white,
+                              size: 28,
+                            ),
+                            onPressed: () {
+                              if (playData.id != null) {
+                                favController.toggleFavorite(playData.id!);
+                              }
+                            },
+                          );
+                        }),
 
                         /// 🔗 Share
                         IconButton(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/res/app_colors.dart';
+import 'package:n_square_international/res/app_url.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
@@ -8,6 +9,7 @@ import '../../../data/api_responce_data.dart';
 import '../../../model/responce/series_res_model/episode_res_model.dart';
 import '../../../model/responce/series_res_model/series_res_model.dart';
 import '../../../viewModel/afterLogin/SeriesDetail/series_detail_controller.dart';
+import '../../../viewModel/afterLogin/home_controller.dart';
 
 class SeriesDetailPage extends StatefulWidget {
   const SeriesDetailPage({super.key});
@@ -18,6 +20,7 @@ class SeriesDetailPage extends StatefulWidget {
 
 class _SeriesDetailPageState extends State<SeriesDetailPage> {
   final SeriesDetailController controller = Get.put(SeriesDetailController());
+  final HomeController homeController = Get.find<HomeController>();
   late Series series;
 
   @override
@@ -205,28 +208,98 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                 const SizedBox(height: 10),
 
                 SizedBox(
-                  height: 140,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 5,
-                    itemBuilder: (context, index) {
-                      return GestureDetector(
-                        onTap: () {
-                          Get.toNamed(AppRoutes.videoPlay);
-                        },
-                        child: Container(
-                          width: 110,
-                          margin: const EdgeInsets.only(left: 16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            image: const DecorationImage(
-                              image: AssetImage("assets/images/image1.png"),
-                            ),
-                          ),
+                  height: 180,
+                  child: Obx(() {
+                    List<Series> similarSeries = [];
+
+                    /// 🔥 Check all flags dynamically
+                    if (series.isPopular == true) {
+                      similarSeries.addAll(homeController.popularSeries);
+                    }
+                    if (series.isLatest == true) {
+                      similarSeries.addAll(homeController.latestSeries);
+                    }
+                    if (series.isRomantic == true) {
+                      similarSeries.addAll(homeController.romanticSeries);
+                    }
+                    if (series.isRevengeDrama == true) {
+                      similarSeries.addAll(homeController.revengeSeries);
+                    }
+
+                    /// ✅ Remove current series + duplicates
+                    var filtered = similarSeries
+                        .where((s) => s.sId != series.sId)
+                        .fold<Map<String, Series>>(
+                      {},
+                          (map, s) => map..putIfAbsent(s.sId ?? "", () => s),
+                    )
+                        .values
+                        .toList();
+
+                    /// 🔥 Fallback if nothing matched
+                    if (filtered.isEmpty) {
+                      filtered = homeController.popularSeries
+                          .where((s) => s.sId != series.sId)
+                          .toList();
+                    }
+
+                    /// ❌ Still empty
+                    if (filtered.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          "No similar series found",
+                          style: TextStyle(color: Colors.white70),
                         ),
                       );
-                    },
-                  ),
+                    }
+
+                    /// ✅ UI
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final item = filtered[index];
+
+                        return GestureDetector(
+                          onTap: () {
+                            Get.offNamed(
+                              AppRoutes.seriesDetails,
+                              arguments: item,
+                              preventDuplicates: false,
+                            );
+                          },
+                          child: Container(
+                            width: 120,
+                            margin: const EdgeInsets.only(right: 12),
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Image.network(
+                                      AppUrls.getImageUrl(item.posterImage),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          Container(color: Colors.grey),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  item.title ?? "",
+                                  style: text12(color: Colors.white),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }),
                 ),
 
                 const SizedBox(height: 30),
@@ -303,7 +376,6 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                 ],
               ),
             ),
-            /// ⬇️ DOWNLOAD BUTTON
             IconButton(
               icon: const Icon(Icons.download, color: Colors.white),
               onPressed: () {

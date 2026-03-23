@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/res/app_images.dart';
 import 'package:n_square_international/routes/app_routes.dart';
+import '../utils/hive_service/hive_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,11 +16,14 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
 
     Timer(const Duration(seconds: 3), () {
-      Get.toNamed(AppRoutes.welcomePage);
+      if (HiveService.isLogin()) {
+        Get.offAllNamed(AppRoutes.myHome);
+      } else {
+        Get.offAllNamed(AppRoutes.welcomePage);
+      }
     });
   }
 

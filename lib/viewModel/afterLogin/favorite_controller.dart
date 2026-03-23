@@ -18,22 +18,22 @@ class FavoriteController extends GetxController {
     // loadDummySongs();
   }
 
-  void loadDummySongs() {
-    favoriteSongs.value = [
-      {
-        "title": "Demo Song 1",
-        "artist": "Artist 1",
-      },
-      {
-        "title": "Demo Song 2",
-        "artist": "Artist 2",
-      },
-      {
-        "title": "Demo Song 3",
-        "artist": "Artist 3",
-      },
-    ];
-  }
+  // void loadDummySongs() {
+  //   favoriteSongs.value = [
+  //     {
+  //       "title": "Demo Song 1",
+  //       "artist": "Artist 1",
+  //     },
+  //     {
+  //       "title": "Demo Song 2",
+  //       "artist": "Artist 2",
+  //     },
+  //     {
+  //       "title": "Demo Song 3",
+  //       "artist": "Artist 3",
+  //     },
+  //   ];
+  // }
 
   Future<void> fetchFavorites() async {
     favoriteResponse.value = ApiResponse.loading();

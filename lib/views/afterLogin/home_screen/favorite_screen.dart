@@ -147,7 +147,7 @@ class _FavoriteScreenState extends State<FavoriteScreen>
   }
 
   /// =======================
-  /// SONGS TAB (Dummy)
+  /// SONGS TAB
   /// =======================
   Widget _songsTab() {
     return Obx(() {

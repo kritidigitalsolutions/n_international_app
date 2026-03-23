@@ -12,7 +12,7 @@ class SongListController extends GetxController {
   final AudioRepo _repo = AudioRepo();
   final RxInt _index = 0.obs;
   RxInt get index => _index;
-  var isFavorite = false.obs;
+  var favoriteMap = <String, bool>{}.obs;
 
   void toggle(int index) {
     _index.value = index;
@@ -42,6 +42,7 @@ class SongListController extends GetxController {
   void onInit() {
     super.onInit();
     fetchSongs();
+    fetchFavoriteSong();
   }
 
   void fetchSongs() async {
@@ -101,6 +102,12 @@ class SongListController extends GetxController {
       final response = await _repo.fetchFavoritesSong();
       favoriteSongResponse.value = ApiResponse.completed(response);
       favoriteSongs.assignAll(response.favorites ?? []);
+      /// ✅ Sync favoriteMap
+      for (var song in favoriteSongs) {
+        if (song.id != null) {
+          favoriteMap[song.id!] = true;
+        }
+      }
     } catch (e) {
       favoriteSongResponse.value = ApiResponse.error(e.toString());
     }
@@ -108,27 +115,32 @@ class SongListController extends GetxController {
 // Check if this series is already in favorites when page opens
   void toggleFavorite(String songid) async {
     try {
-      if (isFavorite.value) {
-        final res = await _repo.deleteFavoriteSong(songid);
-        if (res['success'] == true) {
-          isFavorite.value = false;
-          CustomSnackbar.showSuccess(title: "Success", message: "Removed from favorites");
+      final isFav = favoriteMap[songid] ?? false;
 
-          // Refresh Favorite list immediately
-          if (Get.isRegistered<FavoriteController>()) {
-            Get.find<FavoriteController>().fetchFavorites();
-          }
+      if (isFav) {
+        final res = await _repo.deleteFavoriteSong(songid);
+
+        if (res['success'] == true) {
+          favoriteMap[songid] = false;
+
+          /// remove from local list
+          favoriteSongs.removeWhere((e) => e.id == songid);
+
+          CustomSnackbar.showSuccess(
+            title: "Removed",
+            message: "Removed from favorites",
+          );
         }
       } else {
         final res = await _repo.addFavoriteSong(songid);
         if (res['success'] == true) {
-          isFavorite.value = true;
-          CustomSnackbar.showSuccess(title: "Success", message: "Added to favorites");
-
-          // Refresh Favorite list immediately
-          if (Get.isRegistered<FavoriteController>()) {
-            Get.find<FavoriteController>().fetchFavorites();
-          }
+          favoriteMap[songid] = true;
+          CustomSnackbar.showSuccess(
+            title: "Added",
+            message: "Added to favorites",
+          );
+          /// optional: refresh
+          fetchFavoriteSong();
         }
       }
     } catch (e) {

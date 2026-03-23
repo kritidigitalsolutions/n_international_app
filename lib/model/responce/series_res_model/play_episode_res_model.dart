@@ -1,19 +1,20 @@
 class PlayEpisodeResModel {
-  bool? success;
-  String? provider;
+  bool? success;String? provider;
   String? episodeId;
-  String? videoId;
+  String? videoUrl; // Added for R2
+  String? videoId;  // Keep for backward compatibility
   String? otp;
-  String? playbackInfo;
+  String? videoPlaybackUrl;
   int? ttl;
 
   PlayEpisodeResModel({
     this.success,
     this.provider,
     this.episodeId,
+    this.videoUrl,
     this.videoId,
     this.otp,
-    this.playbackInfo,
+    this.videoPlaybackUrl,
     this.ttl,
   });
 
@@ -21,9 +22,10 @@ class PlayEpisodeResModel {
     success = json['success'];
     provider = json['provider'];
     episodeId = json['episodeId'];
+    videoUrl = json['videoUrl']; // Added for R2
     videoId = json['videoId'];
     otp = json['otp'];
-    playbackInfo = json['playbackInfo'];
+    videoPlaybackUrl = json['videoPlaybackUrl'];
     ttl = json['ttl'];
   }
 }
