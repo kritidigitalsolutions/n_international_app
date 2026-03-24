@@ -71,27 +71,48 @@ class EditProfileController extends GetxController {
   }
 
   Future<void> editProfile() async {
-
+    print("EDIT PROFILE CALLED");
     try {
-
       isLoading.value = true;
 
       final model = UserDetailsReqModel(
         name: nameController.text.trim(),
         phone: mobileController.text.trim(),
         email: emailController.text.trim(),
-        image: profileImage.value?.path ?? "",
+        image: "",
       );
 
-      final response = await _repo.editProfile(model);
+      // 👉 API call only for text data
+      await _repo.editProfile(model);
 
-      /// Save updated user
-      await HiveService.saveUser(response);
+      print("STEP 1");
 
-      // Refresh FullProfileController if it's in memory
-      if (Get.isRegistered<FullProfileController>()) {
-        Get.find<FullProfileController>().fetchUserProfile();
+      final oldUser = HiveService.getUser();
+
+      print("STEP 2: oldUser = $oldUser");
+
+      if (oldUser != null) {
+        print("STEP 3: updating user");
+
+        oldUser.name = nameController.text.trim();
+        oldUser.email = emailController.text.trim();
+        oldUser.phone = mobileController.text.trim();
+
+        if (profileImage.value != null) {
+          oldUser.image = profileImage.value!.path;
+        }
+
+        print("STEP 4: saving user");
+
+        await HiveService.saveUser(oldUser);
+
+        print("STEP 5: saved");
       }
+
+      print("STEP 6: snackbar");
+      Get.closeAllSnackbars();
+      FocusManager.instance.primaryFocus?.unfocus();
+
 
       CustomSnackbar.showSuccess(
         title: "Success",
@@ -101,18 +122,31 @@ class EditProfileController extends GetxController {
       Get.back();
 
     } catch (e) {
+      print("CATCH ERROR: $e");
 
-      print(e);
+      // 🔥 EVEN IF API FAIL → SAVE LOCAL
+      final oldUser = HiveService.getUser();
+
+      if (oldUser != null) {
+        oldUser.name = nameController.text.trim();
+        oldUser.email = emailController.text.trim();
+
+        if (profileImage.value != null) {
+          oldUser.image = profileImage.value!.path;
+        }
+
+        await HiveService.saveUser(oldUser);
+      }
 
       CustomSnackbar.showSuccess(
-        title: "error",
-        message: "Profile not updated",
+        title: "Saved Locally",
+        message: "Profile saved without server",
       );
 
+      Get.back();
+
     } finally {
-
       isLoading.value = false;
-
     }
   }
 

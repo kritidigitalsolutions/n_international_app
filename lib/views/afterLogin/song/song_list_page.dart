@@ -11,6 +11,8 @@ import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import 'package:n_square_international/viewModel/afterLogin/song_controller/song_controllers.dart';
 
+import '../../../model/responce/audio_res_model/song_play_res_model.dart';
+
 class ListenSongsPage extends StatelessWidget {
   const ListenSongsPage({super.key});
 
@@ -168,6 +170,8 @@ class ListenSongsPage extends StatelessWidget {
                           itemCount: songs.length,
                           itemBuilder: (context, index) {
                             final song = songs[index];
+                            // final imageUrl = PlayData.thumbnailPlaybackUrl??song.thumbnailUrl;
+                            print("Thumbnail URL: ${song.thumbnailUrl}");
                             return ListTile(
                               onTap: () {
                                 Get.toNamed(AppRoutes.musicPlay, arguments: song);
@@ -175,7 +179,7 @@ class ListenSongsPage extends StatelessWidget {
                               leading: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Image.network(
-                                  AppUrls.getImageUrl(song.thumbnailUrl),
+                                  song.thumbnailUrl ?? "",
                                   width: 60,
                                   height: 60,
                                   fit: BoxFit.cover,
@@ -184,7 +188,8 @@ class ListenSongsPage extends StatelessWidget {
                                       width: 60,
                                       height: 60,
                                       color: AppColors.white.withOpacity(0.1),
-                                      child: const Icon(Icons.music_note, color: Colors.white54),
+                                      child: const Icon(Icons.music_note,
+                                          color: Colors.white54),
                                     );
                                   },
                                 ),

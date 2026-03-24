@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/data/api_responce_data.dart';
 import 'package:n_square_international/res/app_colors.dart';
-import 'package:n_square_international/res/app_url.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:vdocipher_flutter/vdocipher_flutter.dart';
 
 import '../../../viewModel/afterLogin/song_controller/music_player_controller.dart';
 import '../../../viewModel/afterLogin/song_controller/song_controllers.dart';
@@ -17,7 +15,8 @@ class MusicPlayerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final MusicPlayerController controller =
     Get.put(MusicPlayerController());
-    final SongListController favController = Get.put(SongListController());
+    final SongListController favController =
+    Get.put(SongListController());
 
     final mediaQuery = MediaQuery.of(context).size;
 
@@ -39,6 +38,46 @@ class MusicPlayerPage extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ).copyWith(letterSpacing: 2),
         ),
+
+        /// 👉 SHARE BUTTON (RIGHT SIDE)
+        actions: [
+          Row(
+            mainAxisSize: MainAxisSize.min, // 🔥 IMPORTANT
+            children: [
+              Obx(() {
+                final songId = controller.currentSong.value?.id ?? "";
+                final isFav =
+                songId.isNotEmpty ? (favController.favoriteMap[songId] ?? false) : false;
+
+                final playData = controller.songPlayResponse.value.data?.playData;
+
+                return IconButton(
+                  icon: Icon(
+                    isFav ? Icons.favorite : Icons.favorite_border,
+                    color: isFav ? Colors.red : Colors.white,
+                  ),
+                  onPressed: () {
+                    if (playData?.id != null) {
+                      favController.toggleFavorite(playData!.id!);
+                    }
+                  },
+                );
+              }),
+
+              IconButton(
+                icon: const Icon(Icons.share, color: Colors.white),
+                onPressed: () {
+                  final playData =
+                      controller.songPlayResponse.value.data?.playData;
+
+                  Share.share(
+                    "${playData?.title ?? ''} by ${playData?.artist ?? ''}",
+                  );
+                },
+              ),
+            ],
+          )
+        ],
       ),
       body: Stack(
         children: [
@@ -48,179 +87,195 @@ class MusicPlayerPage extends StatelessWidget {
           Obx(() {
             final response = controller.songPlayResponse.value;
 
-            /// Loading
             if (response.status == Status.loading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.error,
-                ),
-              );
-            }
-
-            /// Error
-            if (response.status == Status.error) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Text(
-                    response.message ?? "Error loading song",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
 
             final playData = response.data?.playData;
-
-            if (playData == null) {
-              return const Center(
-                child: Text(
-                  "No play data available",
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            }
-
-            final playback = playData.vdoCipherPlayback;
+            if (playData == null) return const SizedBox();
 
             return SafeArea(
               child: Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
+              children: [
+              const SizedBox(height: 40),
+
+              /// 🔥 IMAGE CENTER
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 20),
+                    /// 🎵 ALBUM ART
+                    Obx(() {
+                      final song = controller.currentSong.value;
+                      final playData = controller.songPlayResponse.value.data?.playData;
 
-                    /// 🎬 VdoCipher Player (MAIN)
-                    if (playback != null)
-                      Container(
-                        height: mediaQuery.height * 0.30,
+                      final imageUrl =
+                          playData?.thumbnailPlaybackUrl ??
+                              playData?.thumbnailUrl ??
+                              song?.thumbnailUrl;
+
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 500),
+                        height: controller.isPlaying.value ? 280 : 260,
+                        width: controller.isPlaying.value ? 280 : 260,
                         decoration: BoxDecoration(
-                          borderRadius:
-                          BorderRadius.circular(20),
-                          color: Colors.black,
-                        ),
-                        child: ClipRRect(
-                          borderRadius:
-                          BorderRadius.circular(20),
-                          child: VdoPlayer(
-                            embedInfo: EmbedInfo.streaming(
-                              otp: playback.otp ?? "",
-                              playbackInfo: playback.playbackInfo ?? "",
-                            ),
-                            onPlayerCreated: (controller) {
-                              // optional
-                            },
-                            onError: (error) {
-                              print("Vdo Error: ${error.message}");
-                            },
+                          borderRadius: BorderRadius.circular(20),
+                          image: (imageUrl != null && imageUrl.isNotEmpty)
+                              ? DecorationImage(
+                            image: NetworkImage(imageUrl),
+                            fit: BoxFit.cover,
                           )
-
+                              : null,
+                          color: Colors.grey.shade900,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 20,
+                            )
+                          ],
                         ),
-                      )
-                    else
-                      Container(
-                        height: mediaQuery.height * 0.30,
-                        decoration: BoxDecoration(
-                          borderRadius:
-                          BorderRadius.circular(20),
-                          color: AppColors.white
-                              .withOpacity(0.1),
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.music_note,
-                              color: Colors.white54,
-                              size: 80),
-                        ),
-                      ),
-
-                    const SizedBox(height: 30),
-
-                    /// 🎵 Song Info
-                    Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                playData.title ??
-                                    "Unknown Title",
-                                style: text24(
-                                  color: AppColors.white,
-                                  fontWeight:
-                                  FontWeight.bold,
-                                ),
-                                maxLines: 1,
-                                overflow:
-                                TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                playData.artist ??
-                                    "Unknown Artist",
-                                style: text16(
-                                    color: AppColors
-                                        .textSecondary),
-                                maxLines: 1,
-                                overflow:
-                                TextOverflow.ellipsis,
-                              ),
-                            ],
+                        child: (imageUrl == null || imageUrl.isEmpty)
+                            ? const Center(
+                          child: Icon(
+                            Icons.music_note,
+                            color: Colors.white,
+                            size: 80,
                           ),
-                        ),
-
-                        /// ❤️ Favorite
-                        Obx(() {
-                          final isFav = favController.favoriteMap[playData.id] ?? false;
-
-                          return IconButton(
-                            icon: Icon(
-                              isFav ? Icons.favorite : Icons.favorite_border,
-                              color: isFav ? Colors.red : AppColors.white,
-                              size: 28,
-                            ),
-                            onPressed: () {
-                              if (playData.id != null) {
-                                favController.toggleFavorite(playData.id!);
-                              }
-                            },
-                          );
-                        }),
-
-                        /// 🔗 Share
-                        IconButton(
-                          icon: const Icon(
-                            Icons.share_outlined,
-                            color: AppColors.white,
-                            size: 28,
-                          ),
-                          onPressed: () {
-                            Share.share(
-                              "🎧 ${playData.title} by ${playData.artist}\n\nWatch now on N Square International!",
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-
-                    const Spacer(),
-
-                    /// ⚠️ NOTE (Optional UI message)
-                    Text(
-                      "Secure streaming powered by VdoCipher",
-                      style: text12(
-                          color:
-                          AppColors.textSecondary),
-                    ),
-
-                    const SizedBox(height: 20),
+                        )
+                            : null,
+                      );
+                    }),
                   ],
                 ),
+              ),
+
+              /// 🔽 CONTENT (THODA NICHE)
+              Column(
+                children: [
+                  /// 🎵 TITLE
+                  Text(
+                    playData.title ?? "",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  /// 🎤 ARTIST
+                  Text(
+                    playData.artist ?? "",
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 16,
+                    ),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  /// 🎚 SEEK BAR
+                  Obx(() {
+                    return Column(
+                      children: [
+                        Slider(
+                          value: controller.position.value.inSeconds.toDouble(),
+                          max: controller.duration.value.inSeconds
+                              .toDouble()
+                              .clamp(1, double.infinity),
+                          onChanged: (value) {
+                            controller.seek(Duration(seconds: value.toInt()));
+                          },
+                          activeColor: Colors.red,
+                          inactiveColor: Colors.white24,
+                        ),
+
+                        Row(
+                          mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              controller.formatTime(controller.position.value),
+                              style:
+                              const TextStyle(color: Colors.white54),
+                            ),
+                            Text(
+                              controller.formatTime(controller.duration.value),
+                              style:
+                              const TextStyle(color: Colors.white54),
+                            ),
+                          ],
+                        )
+                      ],
+                    );
+                  }),
+
+                  const SizedBox(height: 20),
+
+                  /// 🎮 CONTROLS
+                  Obx(() {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.shuffle, color: Colors.white54),
+
+                        const SizedBox(width: 20),
+
+                        const Icon(Icons.skip_previous,
+                            color: Colors.white, size: 36),
+
+                        const SizedBox(width: 20),
+
+                        GestureDetector(
+                          onTap: () {
+                            if (controller.isPlaying.value) {
+                              controller.pauseSong();
+                            } else {
+                              final url = playData.audioPlaybackUrl ??
+                                  playData.audioUrl;
+                              if (url != null) {
+                                controller.playSong(url);
+                              }
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.red,
+                            ),
+                            child: Icon(
+                              controller.isPlaying.value
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              color: Colors.white,
+                              size: 36,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(width: 20),
+
+                        const Icon(Icons.skip_next,
+                            color: Colors.white, size: 36),
+
+                        const SizedBox(width: 20),
+
+                        const Icon(Icons.repeat,
+                            color: Colors.white54),
+                      ],
+                    );
+                  }),
+
+                  const SizedBox(height: 30),
+                ],
+              ),
+              ],
+            ),
               ),
             );
           }),
@@ -229,7 +284,7 @@ class MusicPlayerPage extends StatelessWidget {
     );
   }
 
-  /// 🎨 Background Gradient
+  /// 🎨 Background
   Widget _backgroundGradient() {
     return Container(
       decoration: const BoxDecoration(

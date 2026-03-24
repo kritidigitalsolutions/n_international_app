@@ -9,6 +9,7 @@ import '../../../data/api_responce_data.dart';
 import '../../../model/responce/series_res_model/episode_res_model.dart';
 import '../../../model/responce/series_res_model/series_res_model.dart';
 import '../../../viewModel/afterLogin/SeriesDetail/series_detail_controller.dart';
+import '../../../viewModel/afterLogin/download_controller/download_controller.dart';
 import '../../../viewModel/afterLogin/home_controller.dart';
 
 class SeriesDetailPage extends StatefulWidget {
@@ -20,8 +21,10 @@ class SeriesDetailPage extends StatefulWidget {
 
 class _SeriesDetailPageState extends State<SeriesDetailPage> {
   final SeriesDetailController controller = Get.put(SeriesDetailController());
+  final DownloadController downloadController = Get.put(DownloadController());
   final HomeController homeController = Get.find<HomeController>();
   late Series series;
+
 
   @override
   void initState() {
@@ -58,9 +61,12 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
                     image: DecorationImage(
-                      image: series.posterImage != null && series.posterImage!.isNotEmpty
-                          ? NetworkImage(series.posterImage!) as ImageProvider
-                          : const AssetImage("assets/images/image2.png"),
+                      image:
+                          NetworkImage(series.bannerImage ?? ''),
+                          //: const AssetImage("assets/images/image2.png"),
+                      onError: (exception, stackTrace) => Center(
+                        child: Icon(Icons.image, size: 50)
+                      ),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -376,20 +382,33 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                 ],
               ),
             ),
+
             IconButton(
-              icon: const Icon(Icons.download, color: Colors.white),
-              onPressed: () {
-                if (!(episode.isLocked ?? false)) {
-                  // 👉 Call your download function
-                  print("Download episode: ${episode.id}");
-                } else {
-                  Get.snackbar(
-                    "Locked",
-                    "Please unlock this episode to download",
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: AppColors.error.withOpacity(0.8),
-                    colorText: Colors.white,
+              icon: Obx(() {
+                bool isThisDownloading = downloadController.downloadingIds.contains(episode.id);
+                bool isDownloaded = downloadController.isDownloaded(episode.id!);
+
+                if (isThisDownloading) {
+                  return const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   );
+                } else if (isDownloaded) {
+                  return const Icon(Icons.check_circle, color: Colors.green);
+                } else {
+                  return const Icon(Icons.download_for_offline, color: Colors.white);
+                }
+              }),
+              onPressed: () {
+                if (episode.id != null) {
+                  downloadController.startDownload(
+                    seriesId: series.sId!,
+                    episodeId: episode.id!,
+                    downloadUrl: episode.videoUrl!, // Actual file URL
+                  );
+                } else {
+                  Get.snackbar("Error", "ID missing for download");
                 }
               },
             ),

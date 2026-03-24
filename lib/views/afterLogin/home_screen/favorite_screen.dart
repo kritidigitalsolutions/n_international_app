@@ -8,6 +8,7 @@ import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import 'package:n_square_international/viewModel/afterLogin/favorite_controller.dart';
 
+import '../../../model/responce/audio_res_model/song_res_model.dart';
 import '../../../viewModel/afterLogin/song_controller/song_controllers.dart';
 
 class FavoriteScreen extends StatefulWidget {
@@ -202,10 +203,17 @@ class _FavoriteScreenState extends State<FavoriteScreen>
                     }
                   },
                 ),
-
-                onTap: () {
-                  // 👉 Navigate to player if needed
-                },
+                  onTap: () {
+                    Get.toNamed(
+                      AppRoutes.musicPlay,
+                      arguments: Song(
+                        id: song.id,
+                        title: song.title,
+                        artist: song.artist,
+                        thumbnailUrl: song.thumbnailUrl,
+                      ),
+                    );
+                  }
               );
             },
           );

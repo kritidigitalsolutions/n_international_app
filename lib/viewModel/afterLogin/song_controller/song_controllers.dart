@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/api_responce_data.dart';
 import '../../../model/responce/audio_res_model/playlist_res_model.dart';
+import '../../../model/responce/audio_res_model/song_play_res_model.dart';
 import '../../../model/responce/audio_res_model/song_res_model.dart';
 import '../../../model/responce/song_res_model/song_res_model.dart';
 import '../../../repo/audio_repo.dart';
+import '../../../routes/app_routes.dart';
 import '../../../utils/custom_snakebar.dart';
 import '../favorite_controller.dart';
 
@@ -23,6 +25,7 @@ class SongListController extends GetxController {
     }
   }
 
+  var isPlaybackLoading = false.obs;
   var selectedTab = 0.obs; // 0: Popular, 1: Trending, 2: Top Charts, 3: New Releases
   final List<String> languages = ['English', 'Hindi', 'Punjabi', 'Spanish'];
   var selectedLanguage = 'English'.obs;
@@ -112,6 +115,47 @@ class SongListController extends GetxController {
       favoriteSongResponse.value = ApiResponse.error(e.toString());
     }
   }
+/// song play
+  void playSong(String songId) async {
+    try {
+      isPlaybackLoading.value = true;
+
+      final response = await _repo.getSongPlayData(songId);
+
+      if (response.success == true && response.playData != null) {
+        final data = response.playData!;
+
+        String finalAudioUrl =
+            data.audioPlaybackUrl ?? data.audioUrl ?? "";
+
+        String finalThumbUrl =
+            data.thumbnailPlaybackUrl ?? data.thumbnailUrl ?? "";
+
+        if (finalAudioUrl.isNotEmpty) {
+          Get.toNamed(
+            AppRoutes.musicPlay,
+            arguments: {
+              'id': data.id,
+              'url': finalAudioUrl,
+              'title': data.title,
+              'artist': data.artist,
+              'image': finalThumbUrl,
+            },
+          );
+        } else {
+          CustomSnackbar.showError(
+              title: "Error", message: "Audio file not found");
+        }
+      }
+    } catch (e) {
+      print("Playback Error: $e");
+      CustomSnackbar.showError(
+          title: "Error", message: "Failed to load song playback");
+    } finally {
+      isPlaybackLoading.value = false;
+    }
+  }
+
 // Check if this series is already in favorites when page opens
   void toggleFavorite(String songid) async {
     try {

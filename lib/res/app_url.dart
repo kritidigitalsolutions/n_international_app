@@ -1,6 +1,6 @@
 class AppUrls {
-  static const String baseUrl = "http://192.168.1.24:9000/api";
-  static const String baseImageUrl = "http://192.168.1.24:9000";
+  static const String baseUrl = "http://192.168.1.8:9000/api";
+  static const String baseImageUrl = "http://192.168.1.8:9000";
 
   //--------------------------------------------------
   //auth
@@ -51,6 +51,12 @@ class AppUrls {
   static const String favoriteSong = "$baseUrl/audio/favorites";
   static String deleteFavoriteSong(String songid) => "$favoriteSong/$songid";
   static String addFavoriteSong(String songid) => "$favoriteSong/$songid";
+  //-----------------------------------------------------------
+  // offline downloads
+  //-----------------------------------------------
+  static const String addDownload = "$baseUrl/library/offline-downloads";
+  static String deleteDownload(String downloadId) => "$baseUrl/library/offline-downloads/$downloadId";
+  static const String getdownload = "$baseUrl/library/offline-downloads";
   //-----------------------------------------------------------
   // images
   //-----------------------------------------------

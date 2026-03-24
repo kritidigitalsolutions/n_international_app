@@ -18,8 +18,9 @@ class PlayData {
   String? artist;
   String? thumbnailUrl;
   String? audioUrl;
+  String? thumbnailPlaybackUrl;
+  String? audioPlaybackUrl; // ✅ ADD THIS
   int? durationMinutes;
-  VdoCipherPlayback? vdoCipherPlayback;
 
   PlayData({
     this.id,
@@ -27,8 +28,8 @@ class PlayData {
     this.artist,
     this.thumbnailUrl,
     this.audioUrl,
+    this.audioPlaybackUrl, // ✅ ADD
     this.durationMinutes,
-    this.vdoCipherPlayback,
   });
 
   PlayData.fromJson(Map<String, dynamic> json) {
@@ -37,10 +38,9 @@ class PlayData {
     artist = json['artist'];
     thumbnailUrl = json['thumbnailUrl'];
     audioUrl = json['audioUrl'];
+    audioPlaybackUrl = json['audioPlaybackUrl']; // ✅ ADD
     durationMinutes = json['durationMinutes'];
-    vdoCipherPlayback = json['vdoCipherPlayback'] != null
-        ? VdoCipherPlayback.fromJson(json['vdoCipherPlayback'])
-        : null;
+    thumbnailPlaybackUrl = json['thumbnailPlaybackUrl'];
   }
 }
 

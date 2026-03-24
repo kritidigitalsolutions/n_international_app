@@ -25,6 +25,7 @@ class Series {
   String? sId;
   String? title;
   String? posterImage;
+  String? posterPlaybackUrl;
   String? bannerImage;
   List<String>? languages;
   List<String>? genres;
@@ -39,6 +40,7 @@ class Series {
 
   Series(
       {this.sId,
+      this.posterPlaybackUrl,
       this.title,
       this.posterImage,
       this.bannerImage,
@@ -58,6 +60,7 @@ class Series {
     title = json['title'];
     posterImage = json['posterImage'];
     bannerImage = json['bannerImage'];
+    posterPlaybackUrl = json['posterPlaybackUr'];
     languages = json['languages'].cast<String>();
     genres = json['genres'].cast<String>();
     totalEpisodes = json['totalEpisodes'];

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -75,10 +77,18 @@ class EditProfilePage extends StatelessWidget {
                             // 2. Otherwise, show the existing image from Hive/Server
                             final user = HiveService.getUser();
                             if (user != null && user.image != null && user.image!.isNotEmpty) {
-                              return CircleAvatar(
-                                radius: 55,
-                                backgroundImage: NetworkImage(user.image!),
-                              );
+
+                              if (user.image!.startsWith('http')) {
+                                return CircleAvatar(
+                                  radius: 55,
+                                  backgroundImage: NetworkImage(user.image!), // server image
+                                );
+                              } else {
+                                return CircleAvatar(
+                                  radius: 55,
+                                  backgroundImage: FileImage(File(user.image!)), // local image
+                                );
+                              }
                             }
 
                             // 3. Fallback to camera icon
@@ -146,7 +156,10 @@ class EditProfilePage extends StatelessWidget {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          onPressed: controller.editProfile,
+                          onPressed: () {
+                            print("BUTTON CLICKED");
+                            controller.editProfile();
+                          },
                           child: Text(
                             "Save Changes",
                             style: text16(color: AppColors.white, fontWeight: FontWeight.bold),

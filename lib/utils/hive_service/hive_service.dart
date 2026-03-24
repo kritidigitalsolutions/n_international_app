@@ -27,14 +27,18 @@ class HiveService {
 
   /// Save user from API response
   static Future<void> saveUserFromApi(Map<String, dynamic> user) async {
-
     final oldUser = getUser();
 
     final userDetails = UserDetails(
       name: user["name"] ?? "",
       email: user["email"] ?? "",
       phone: user["phone"] ?? "",
-      image: user["image"] ?? "",
+
+      // 👇 IMPORTANT FIX
+      image: (oldUser?.image != null && oldUser!.image!.startsWith('/'))
+          ? oldUser.image   // local image preserve
+          : user["image"] ?? "",
+
       token: oldUser?.token ?? "",
     );
 
