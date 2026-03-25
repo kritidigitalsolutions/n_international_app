@@ -15,7 +15,7 @@ class DownloadController extends GetxController {
 
   // RxMap to track episodeId -> local file path
   var downloadedFiles = <String, String>{}.obs;
-
+  var downloadedMeta = <String, DownloadItem>{}.obs;
   var downloadListResponse = ApiResponse<DownloadResModel>.loading().obs;
   var isDeleting = false.obs;
 
@@ -45,7 +45,10 @@ class DownloadController extends GetxController {
           String filePath = "${appDocDir.path}/$fileName";
 
           if (File(filePath).existsSync()) {
-            downloadedFiles[episodeId] = filePath; // ✅ now both non-null
+            downloadedFiles[episodeId] = filePath;
+
+            // ✅ store full data
+            downloadedMeta[episodeId] = item;
           }
         }
     }

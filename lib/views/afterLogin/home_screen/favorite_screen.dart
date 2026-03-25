@@ -183,7 +183,24 @@ class _FavoriteScreenState extends State<FavoriteScreen>
               final song = songs[index];
 
               return ListTile(
-                leading: const Icon(Icons.music_note, color: Colors.white),
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    song.thumbnailUrl ?? "",
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        color: AppColors.white.withOpacity(0.1),
+                        child: const Icon(Icons.music_note,
+                            color: Colors.white54),
+                      );
+                    },
+                  ),
+                ),
 
                 title: Text(
                   song.title ?? "",

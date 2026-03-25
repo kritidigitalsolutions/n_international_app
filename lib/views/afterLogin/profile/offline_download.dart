@@ -7,6 +7,7 @@ import 'package:n_square_international/utils/textStyle.dart';
 import '../../../routes/app_routes.dart';
 import '../../../utils/custom_button.dart';
 import '../../../viewModel/afterLogin/download_controller/download_controller.dart';
+import '../SeriesDetail/video_play_page.dart';
 
 class OfflineDownloadedScreen extends StatelessWidget {
   const OfflineDownloadedScreen({super.key});
@@ -44,6 +45,17 @@ class OfflineDownloadedScreen extends StatelessWidget {
                   final item = downloads[index];
                   final episodeId = item.key;
                   final filePath = item.value;
+                  final meta = controller.downloadedMeta[episodeId];
+
+                  final title =
+                      meta?.series?.title ??
+                          meta?.title ??
+                          "Episode $episodeId";
+
+                  final image =
+                      meta?.thumbnailPlaybackUrl ??
+                          meta?.series?.posterPlaybackUrl;
+
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -59,11 +71,14 @@ class OfflineDownloadedScreen extends StatelessWidget {
                         GestureDetector(
                           onTap: () {
                             if (File(filePath).existsSync()) {
-                              Get.toNamed(AppRoutes.videoPlay, arguments: {
-                                'success': true,
-                                'videoPlaybackUrl': filePath,
-                                'episodeId': episodeId,
-                              });
+                              Get.to(
+                                    () => const SeriesPosterPlayerPage(),
+                                arguments: {
+                                  "videoUrl": filePath, // ✅ local file
+                                  "episodeId": episodeId,
+                                  "videoId": meta?.series?.sId ?? "",
+                                },
+                              );
                             } else {
                               Get.snackbar("Error", "File not available offline");
                             }
@@ -78,7 +93,23 @@ class OfflineDownloadedScreen extends StatelessWidget {
                                 bottomLeft: Radius.circular(14),
                               ),
                             ),
-                            child: const Icon(Icons.movie, color: Colors.white, size: 40),
+                            child: image != null
+                                ? ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(14),
+                                bottomLeft: Radius.circular(14),
+                              ),
+                              child: Image.network(
+                                image,
+                                width: 90,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.movie, color: Colors.white),
+                              ),
+                            )
+                                : const Icon(Icons.movie, color: Colors.white, size: 40),
+
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -90,12 +121,15 @@ class OfflineDownloadedScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  "Episode $episodeId",
-                                  style: text16(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                  Text(
+                                    title,
+                                    style: text16(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 const Spacer(),
                                 // Remove Button
                                 GestureDetector(
@@ -114,11 +148,14 @@ class OfflineDownloadedScreen extends StatelessWidget {
                         GestureDetector(
                           onTap: () {
                             if (File(filePath).existsSync()) {
-                              Get.toNamed(AppRoutes.videoPlay, arguments: {
-                                'success': true,
-                                'videoPlaybackUrl': filePath,
-                                'episodeId': episodeId,
-                              });
+                              Get.to(
+                                    () => const SeriesPosterPlayerPage(),
+                                arguments: {
+                                  "videoUrl": filePath, // ✅ local file
+                                  "episodeId": episodeId,
+                                  "videoId": meta?.series?.sId ?? "",
+                                },
+                              );
                             } else {
                               Get.snackbar("Error", "File not available offline");
                             }

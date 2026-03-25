@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+
 import '../../../model/responce/series_res_model/play_episode_res_model.dart';
+import '../../../viewModel/afterLogin/history_controller/histroy_controller.dart';
 
 class SeriesPosterPlayerPage extends StatefulWidget {
   const SeriesPosterPlayerPage({super.key});
@@ -14,20 +16,37 @@ class SeriesPosterPlayerPage extends StatefulWidget {
 }
 
 class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
+  final HistoryController _historyController =
+  Get.put(HistoryController());
+
   VideoPlayerController? _videoPlayerController;
   ChewieController? _chewieController;
+
   bool _isLoading = true;
+
+  int lastSentSecond = 0; // ✅ avoid duplicate API calls
 
   @override
   void initState() {
     super.initState();
 
     SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitUp
     ]);
 
-    final PlayEpisodeResModel data = Get.arguments;
-    String playbackUrl = data.videoPlaybackUrl ?? data.videoUrl ?? "";
+    final args = Get.arguments;
+
+    String playbackUrl = "";
+
+// 👉 Case 1: From normal flow
+    if (args is PlayEpisodeResModel) {
+      playbackUrl = args.videoPlaybackUrl ?? args.videoUrl ?? "";
+    }
+
+// 👉 Case 2: From history screen
+    else if (args is Map) {
+      playbackUrl = args["videoUrl"] ?? "";
+    }
 
     initializePlayer(playbackUrl);
   }
@@ -46,24 +65,62 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
 
       _videoPlayerController = VideoPlayerController.networkUrl(
         Uri.parse(url),
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+        videoPlayerOptions:
+        VideoPlayerOptions(mixWithOthers: true),
       );
 
       await _videoPlayerController!.initialize();
+
+      /// ✅ LISTENER FOR HISTORY TRACKING
+      _videoPlayerController!.addListener(() {
+        if (_videoPlayerController!.value.isInitialized &&
+            _videoPlayerController!.value.isPlaying) {
+
+          final position =
+              _videoPlayerController!.value.position.inSeconds;
+
+          // 👉 Call API every 10 sec (no duplicate)
+          if (position > 0 &&
+              position % 10 == 0 &&
+              position != lastSentSecond) {
+
+            lastSentSecond = position;
+
+            final PlayEpisodeResModel data = Get.arguments;
+
+            if (data.videoId != null ||
+                data.episodeId != null) {
+
+              print("⏱ Sending History: $position sec");
+
+              _historyController.updateWatchHistory(
+                seriesId: data.videoId ?? "",
+                episodeId: data.episodeId ?? "",
+                progressSeconds: position,
+              );
+            }
+          }
+        }
+      });
 
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController!,
         autoPlay: true,
         looping: false,
-        aspectRatio: _videoPlayerController!.value.aspectRatio,
+        aspectRatio:
+        _videoPlayerController!.value.aspectRatio,
         allowFullScreen: true,
-        deviceOrientationsAfterFullScreen: [DeviceOrientation.portraitUp],
-        deviceOrientationsOnEnterFullScreen: [DeviceOrientation.portraitUp],
+        deviceOrientationsAfterFullScreen: [
+          DeviceOrientation.portraitUp
+        ],
+        deviceOrientationsOnEnterFullScreen: [
+          DeviceOrientation.portraitUp
+        ],
         allowMuting: true,
-        showControls: false, // ❗ hide default controls (important)
+        showControls: false,
       );
     } catch (e) {
-      debugPrint("Video Init Error: $e");
+      debugPrint("❌ Video Init Error: $e");
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -73,6 +130,27 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
 
   @override
   void dispose() {
+    /// ✅ FINAL PROGRESS SAVE
+    if (_videoPlayerController != null &&
+        _videoPlayerController!.value.isInitialized) {
+
+      final PlayEpisodeResModel data = Get.arguments;
+
+      final position =
+          _videoPlayerController!.value.position.inSeconds;
+
+      print("📤 Final Progress Sent: $position sec");
+
+      if (data.videoId != null ||
+          data.episodeId != null) {
+        _historyController.updateWatchHistory(
+          seriesId: data.videoId ?? "",
+          episodeId: data.episodeId ?? "",
+          progressSeconds: position,
+        );
+      }
+    }
+
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.landscapeLeft,
@@ -81,19 +159,19 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
 
     _videoPlayerController?.dispose();
     _chewieController?.dispose();
+
     super.dispose();
   }
 
-  /// 👉 Action Button Widget
+  /// 👉 Action Buttons
   Widget _buildAction(IconData icon, String label) {
     return Column(
       children: [
         Icon(icon, color: Colors.white, size: 28),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
-        ),
+        Text(label,
+            style: const TextStyle(
+                color: Colors.white, fontSize: 12)),
       ],
     );
   }
@@ -103,45 +181,56 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.red))
+          ? const Center(
+          child:
+          CircularProgressIndicator(color: Colors.red))
           : _chewieController != null &&
           _videoPlayerController != null &&
-          _videoPlayerController!.value.isInitialized
+          _videoPlayerController!
+              .value.isInitialized
           ? Stack(
         children: [
-          /// 🎬 FULL SCREEN VIDEO (REELS STYLE)
+          /// 🎬 FULL VIDEO
           Positioned.fill(
             child: FittedBox(
               fit: BoxFit.cover,
               child: SizedBox(
-                width:
-                _videoPlayerController!.value.size.width,
-                height:
-                _videoPlayerController!.value.size.height,
-                child: Chewie(controller: _chewieController!),
+                width: _videoPlayerController!
+                    .value.size.width,
+                height: _videoPlayerController!
+                    .value.size.height,
+                child: Chewie(
+                    controller: _chewieController!),
               ),
             ),
           ),
 
-          /// 🖐 TAP PLAY/PAUSE
+          /// ▶ PLAY / PAUSE
           GestureDetector(
             onTap: () {
               final isPlaying =
-                  _videoPlayerController!.value.isPlaying;
+                  _videoPlayerController!
+                      .value.isPlaying;
+
               setState(() {
                 isPlaying
-                    ? _videoPlayerController!.pause()
-                    : _videoPlayerController!.play();
+                    ? _videoPlayerController!
+                    .pause()
+                    : _videoPlayerController!
+                    .play();
               });
             },
             child: Container(
               color: Colors.transparent,
               child: Center(
-                child: !_videoPlayerController!.value.isPlaying
+                child: !_videoPlayerController!
+                    .value.isPlaying
                     ? Container(
-                  padding: const EdgeInsets.all(12),
+                  padding:
+                  const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black
+                        .withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -155,7 +244,7 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
             ),
           ),
 
-          /// 🔙 BACK BUTTON
+          /// 🔙 BACK
           Positioned(
             top: 40,
             left: 10,
@@ -166,52 +255,26 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
             ),
           ),
 
-          /// 👉 RIGHT SIDE ACTIONS
+          /// 👉 RIGHT ACTIONS
           Positioned(
             right: 10,
             bottom: 120,
             child: Column(
               children: [
-                _buildAction(Icons.bookmark_border, "Save"),
+                _buildAction(
+                    Icons.bookmark_border, "Save"),
                 const SizedBox(height: 20),
                 _buildAction(
-                    Icons.play_circle_outline, "Episode"),
+                    Icons.play_circle_outline,
+                    "Episode"),
                 const SizedBox(height: 20),
-                _buildAction(Icons.volume_up, "Sound"),
+                _buildAction(
+                    Icons.volume_up, "Sound"),
               ],
             ),
           ),
 
-          /// 📝 DESCRIPTION
-          Positioned(
-            left: 10,
-            right: 80,
-            bottom: 70,
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  "The Last Kingdom - Episode 1",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  "Uhtred begins his journey in this epic historical drama...",
-                  style: TextStyle(
-                      color: Colors.white70, fontSize: 12),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-
-          /// ⏱ SEEK BAR
+          /// ⏱ PROGRESS BAR
           Positioned(
             left: 10,
             right: 10,
@@ -222,7 +285,8 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
               colors: VideoProgressColors(
                 playedColor: Colors.red,
                 bufferedColor: Colors.grey,
-                backgroundColor: Colors.white24,
+                backgroundColor:
+                Colors.white24,
               ),
             ),
           ),

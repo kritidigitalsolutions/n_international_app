@@ -1,6 +1,9 @@
 class AppUrls {
-  static const String baseUrl = "http://192.168.1.8:9000/api";
-  static const String baseImageUrl = "http://192.168.1.8:9000";
+
+  // static const String baseUrl = "http://192.168.1.8:9000/api";
+  static const String baseUrl = "https://n-square-international.vercel.app/api";
+  // static const String baseImageUrl = "http://192.168.1.8:9000";
+  static const String baseImageUrl = "https://n-square-international.vercel.app";
 
   //--------------------------------------------------
   //auth
@@ -57,6 +60,12 @@ class AppUrls {
   static const String addDownload = "$baseUrl/library/offline-downloads";
   static String deleteDownload(String downloadId) => "$baseUrl/library/offline-downloads/$downloadId";
   static const String getdownload = "$baseUrl/library/offline-downloads";
+  // -----------------------------------------------------------
+  // watch histroy
+  //-----------------------------------------------
+  static const String addHistory = "$baseUrl/library/history";
+  static const String getHistory = "$baseUrl/library/history";
+  static String deleteHistory(String historyId) => "$baseUrl/library/history/$historyId";
   //-----------------------------------------------------------
   // images
   //-----------------------------------------------

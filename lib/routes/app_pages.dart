@@ -65,7 +65,7 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.history,
-      page: () => const HistoryScreen(),
+      page: () => HistoryScreen(),
       transition: Transition.rightToLeft,
     ),
 
