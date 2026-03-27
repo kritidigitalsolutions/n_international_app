@@ -176,6 +176,16 @@ class ListenSongsPage extends StatelessWidget {
                               onTap: () {
                                 Get.toNamed(AppRoutes.musicPlay, arguments: song);
                               },
+                              // onTap: () {
+                              //   Get.toNamed(
+                              //     AppRoutes.musicPlay,
+                              //     arguments:
+                              //     {
+                              //       "song": song,
+                              //       "filePath": song.audioUrl,
+                              //     },
+                              //   );
+                              // },
                               leading: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Image.network(

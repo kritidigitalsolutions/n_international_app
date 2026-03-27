@@ -7,30 +7,29 @@ class DownloadRepo {
   final _api = NetworkApiService();
 
   Future<dynamic> addOfflineDownload({
-    required String seriesId,
-    required String episodeId,
+    String? seriesId,
+    String? episodeId,
+    String? songId,
+    required String contentType,
   }) async {
     try {
       final token = HiveService.getToken();
       if (token != null) _api.setToken(token);
 
-      // Change the order of arguments inside postApi
-      final response = await _api.postApi(
-        AppUrls.addDownload, // 1st argument: String (URL)
-        {                    // 2nd argument: Map (Body)
-          "contentType": "EPISODE",
-          "seriesId": seriesId,
-          "episodeId": episodeId,
-        },
-      );
+      final Map<String, dynamic> body = {
+        "contentType": contentType,
+      };
 
+      if (seriesId != null) body["seriesId"] = seriesId;
+      if (episodeId != null) body["episodeId"] = episodeId;
+      if (songId != null) body["songId"] = songId;
+
+      final response = await _api.postApi(AppUrls.addDownload, body);
       return response;
     } catch (e) {
       rethrow;
     }
   }
-
-  /// get donwloads
 
   Future<DownloadResModel> getOfflineDownloads() async {
     try {
@@ -43,13 +42,12 @@ class DownloadRepo {
       rethrow;
     }
   }
-/// delete download
+
   Future<dynamic> deleteDownload(String downloadId) async {
     try {
       final token = HiveService.getToken();
       if (token != null) _api.setToken(token);
 
-      // Using the DELETE method for the specific download ID
       final response = await _api.deleteApi(AppUrls.deleteDownload(downloadId), {});
       return response;
     } catch (e) {

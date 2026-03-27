@@ -1,23 +1,22 @@
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../../data/api_responce_data.dart';
-import '../../../model/responce/download_res_model/download_res_model.dart';
-import '../../../repo/donwload_repo.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DownloadController extends GetxController {
-  final DownloadRepo _repo = DownloadRepo();
   final Dio dio = Dio();
 
   var downloadingIds = <String>[].obs;
 
-  // RxMap to track episodeId -> local file path
+  /// id -> file path
   var downloadedFiles = <String, String>{}.obs;
-  var downloadedMeta = <String, DownloadItem>{}.obs;
-  var downloadListResponse = ApiResponse<DownloadResModel>.loading().obs;
-  var isDeleting = false.obs;
+
+  /// id -> metadata
+  var downloadedMeta = <String, Map<String, dynamic>>{}.obs;
 
   @override
   void onInit() {
@@ -25,109 +24,151 @@ class DownloadController extends GetxController {
     fetchDownloads();
   }
 
-  /// Fetch downloads from API
+  /// ============================
+  /// FETCH LOCAL DOWNLOADS
+  /// ============================
   Future<void> fetchDownloads() async {
-    downloadListResponse.value = ApiResponse.loading();
-    try {
-      final data = await _repo.getOfflineDownloads();
-      downloadListResponse.value = ApiResponse.completed(data);
+    print("FETCH CALLED");
+    final prefs = await SharedPreferences.getInstance();
+    final savedList = prefs.getStringList("offline_data") ?? [];
+    print("LOCAL DATA: $savedList");
 
-      // Populate downloadedFiles if file exists locally
-      if (data.downloads != null) {
-        for (var item in data.downloads!) {
-          final episodeId = item.episode?.sId ?? item.sId;
+    downloadedFiles.clear();
+    downloadedMeta.clear();
 
-          // Skip if episodeId is null
-          if (episodeId == null) continue;
+    for (var item in savedList) {
+      final data = jsonDecode(item);
 
-          final fileName = "$episodeId.mp4";
-          Directory appDocDir = await getApplicationDocumentsDirectory();
-          String filePath = "${appDocDir.path}/$fileName";
+      final filePath = data["filePath"];
+      final id = data["id"];
 
-          if (File(filePath).existsSync()) {
-            downloadedFiles[episodeId] = filePath;
-
-            // ✅ store full data
-            downloadedMeta[episodeId] = item;
-          }
-        }
-    }
-    } catch (e) {
-      downloadListResponse.value = ApiResponse.error(e.toString());
+      if (File(filePath).existsSync()) {
+        downloadedFiles[id] = filePath;
+        downloadedMeta[id] = data;
+      }
     }
   }
 
-  /// Start download: API + file download
+  /// ============================
+  /// CHECK DOWNLOADED
+  /// ============================
+  bool isDownloaded(String id) {
+    return downloadedFiles.containsKey(id) &&
+        File(downloadedFiles[id]!).existsSync();
+  }
+
+  /// ============================
+  /// DOWNLOAD + SAVE LOCAL
+  /// ============================
   Future<void> startDownload({
-    required String seriesId,
-    required String episodeId,
+    String? seriesId,
+    String? episodeId,
+    String? songId,
+    required String contentType,
     required String downloadUrl,
+    required String title,
+    String? image,
+    String? subtitle,
   }) async {
-    if (downloadingIds.contains(episodeId)) return;
+    final id = episodeId ?? songId;
+    if (id == null) return;
+
+    if (isDownloaded(id)) {
+      Get.snackbar("Already Downloaded", "Already available offline",
+          backgroundColor: Colors.orange, colorText: Colors.white);
+      return;
+    }
+
+    if (downloadingIds.contains(id)) return;
 
     try {
-      downloadingIds.add(episodeId);
+      downloadingIds.add(id);
 
-      // 1️⃣ API call to mark download
-      final response = await _repo.addOfflineDownload(seriesId: seriesId, episodeId: episodeId);
-      if (response['success'] != true) {
-        Get.snackbar("Error", response['message'] ?? "Failed to add download",
-            backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
-        return;
-      }
+      /// FILE SAVE PATH
+      Directory dir = await getApplicationDocumentsDirectory();
+      final extension = contentType == "SONG" ? "mp3" : "mp4";
+      String path = "${dir.path}/$id.$extension";
 
-      // 2️⃣ Actual file download
-      Directory appDocDir = await getApplicationDocumentsDirectory();
-      String savePath = "${appDocDir.path}/$episodeId.mp4";
+      /// DOWNLOAD FILE
+      await dio.download(
+        downloadUrl,
+        path,
+        onReceiveProgress: (rec, total) {
+          if (total != -1) {
+            debugPrint("Downloading $id: ${(rec / total * 100).toStringAsFixed(0)}%");
+          }
+        },
+      );
 
-      await dio.download(downloadUrl, savePath,
-          onReceiveProgress: (received, total) {
-            if (total != -1) {
-              print("Downloading $episodeId: ${(received / total * 100).toStringAsFixed(0)}%");
-            }
-          });
+      /// SAVE METADATA LOCALLY
+      final prefs = await SharedPreferences.getInstance();
+      List<String> savedList = prefs.getStringList("offline_data") ?? [];
 
-      // 3️⃣ Update reactive map
-      downloadedFiles[episodeId] = savePath;
+      final newItem = {
+        "id": id,
+        "title": title,
+        "filePath": path,
+        "contentType": contentType,
+        "image": image,
+        "subtitle": subtitle,
 
-      Get.snackbar("Success", "Download complete",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.withOpacity(0.8),
-          colorText: Colors.white);
+        // ✅ ADD THIS (VERY IMPORTANT)
+        "song": {
+          "_id": songId,
+          "title": title,
+          "thumbnail": image,
+        }
+      };
+
+
+      savedList.add(jsonEncode(newItem));
+      await prefs.setStringList("offline_data", savedList);
+
+      /// REFRESH UI
+      await fetchDownloads();
+
+      print("SAVING DOWNLOAD: $newItem");
+      Get.snackbar("Success", "Download completed",
+          backgroundColor: Colors.green, colorText: Colors.white);
     } catch (e) {
+      debugPrint("Download Error: $e");
       Get.snackbar("Error", "Download failed",
-          backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
+          backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
-      downloadingIds.remove(episodeId);
+      downloadingIds.remove(id);
     }
   }
 
-  /// Remove download (local + backend)
-  Future<void> removeDownload(String episodeId) async {
+  /// ============================
+  /// REMOVE DOWNLOAD
+  /// ============================
+  Future<void> removeDownload(String id) async {
     try {
-      isDeleting.value = true;
+      final prefs = await SharedPreferences.getInstance();
+      List<String> savedList = prefs.getStringList("offline_data") ?? [];
 
-      // Remove local file
-      if (downloadedFiles.containsKey(episodeId)) {
-        final file = File(downloadedFiles[episodeId]!);
+      /// REMOVE FROM LIST
+      savedList.removeWhere((item) {
+        final data = jsonDecode(item);
+        return data["id"] == id;
+      });
+
+      await prefs.setStringList("offline_data", savedList);
+
+      /// DELETE FILE
+      if (downloadedFiles.containsKey(id)) {
+        final file = File(downloadedFiles[id]!);
         if (file.existsSync()) file.deleteSync();
-        downloadedFiles.remove(episodeId);
       }
 
-      // Optional: remove from backend
-      await _repo.deleteDownload(episodeId);
+      downloadedFiles.remove(id);
+      downloadedMeta.remove(id);
 
       Get.snackbar("Removed", "Download removed",
-          backgroundColor: Colors.green.withOpacity(0.7), colorText: Colors.white);
+          backgroundColor: Colors.green, colorText: Colors.white);
     } catch (e) {
-      Get.snackbar("Error", "Failed to remove download");
-    } finally {
-      isDeleting.value = false;
+      debugPrint("Remove Error: $e");
+      Get.snackbar("Error", "Failed to remove");
     }
-  }
-
-  /// Check if episode is downloaded
-  bool isDownloaded(String episodeId) {
-    return downloadedFiles.containsKey(episodeId) && File(downloadedFiles[episodeId]!).existsSync();
   }
 }

@@ -405,7 +405,10 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                   downloadController.startDownload(
                     seriesId: series.sId!,
                     episodeId: episode.id!,
-                    downloadUrl: episode.videoUrl!, // Actual file URL
+                    downloadUrl: episode.videoUrl!,
+                    contentType: "EPISODE",
+                    title: series.title!,
+
                   );
                 } else {
                   Get.snackbar("Error", "ID missing for download");

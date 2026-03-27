@@ -30,6 +30,7 @@ class PlayData {
     this.audioUrl,
     this.audioPlaybackUrl, // ✅ ADD
     this.durationMinutes,
+    this.thumbnailPlaybackUrl,
   });
 
   PlayData.fromJson(Map<String, dynamic> json) {

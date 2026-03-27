@@ -28,6 +28,7 @@ class Song {
   bool? isNewRelease;
   DateTime? createdAt;
   DateTime? updatedAt;
+  String? thumbnail;
 
   Song({
     this.id,
@@ -42,6 +43,7 @@ class Song {
     this.isNewRelease,
     this.createdAt,
     this.updatedAt,
+    this.thumbnail,
   });
 
   Song.fromJson(Map<String, dynamic> json) {
@@ -57,5 +59,6 @@ class Song {
     isNewRelease = json['isNewRelease'];
     createdAt = DateTime.tryParse(json["createdAt"] ?? "");
     updatedAt = DateTime.tryParse(json["updatedAt"] ?? "");
+    thumbnail = json['thumbnail'];
   }
 }

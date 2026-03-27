@@ -1,6 +1,7 @@
 class DownloadResModel {
   bool? success;
-  int? count;  List<DownloadItem>? downloads;
+  int? count;
+  List<DownloadItem>? downloads;
 
   DownloadResModel({this.success, this.count, this.downloads});
 
@@ -24,8 +25,18 @@ class DownloadItem {
   String? thumbnailPlaybackUrl;
   SeriesInDownload? series;
   EpisodeInDownload? episode;
+  SongInDownload? song;
 
-  DownloadItem({this.sId, this.title, this.contentType, this.mediaPlaybackUrl, this.thumbnailPlaybackUrl, this.series, this.episode});
+  DownloadItem({
+    this.sId,
+    this.title,
+    this.contentType,
+    this.mediaPlaybackUrl,
+    this.thumbnailPlaybackUrl,
+    this.series,
+    this.episode,
+    this.song,
+  });
 
   DownloadItem.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];
@@ -35,6 +46,7 @@ class DownloadItem {
     thumbnailPlaybackUrl = json['thumbnailPlaybackUrl'];
     series = json['series'] != null ? SeriesInDownload.fromJson(json['series']) : null;
     episode = json['episode'] != null ? EpisodeInDownload.fromJson(json['episode']) : null;
+    song = json['song'] != null ? SongInDownload.fromJson(json['song']) : null;
   }
 }
 
@@ -63,5 +75,23 @@ class EpisodeInDownload {
     sId = json['_id'];
     episodeNumber = json['episodeNumber'];
     title = json['title'];
+  }
+}
+
+class SongInDownload {
+  String? sId;
+  String? title;
+  String? artist;
+  String? thumbnailUrl;
+  String? thumbnailPlaybackUrl;
+
+  SongInDownload({this.sId, this.title, this.artist, this.thumbnailUrl, this.thumbnailPlaybackUrl});
+
+  SongInDownload.fromJson(Map<String, dynamic> json) {
+    sId = json['_id'];
+    title = json['title'];
+    artist = json['artist'];
+    thumbnailUrl = json['thumbnailUrl'];
+    thumbnailPlaybackUrl = json['thumbnailPlaybackUrl'];
   }
 }

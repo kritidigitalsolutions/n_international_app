@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../data/api_responce_data.dart';
 import '../../../model/responce/audio_res_model/playlist_res_model.dart';
 import '../../../model/responce/audio_res_model/song_play_res_model.dart';
@@ -8,10 +9,13 @@ import '../../../model/responce/song_res_model/song_res_model.dart';
 import '../../../repo/audio_repo.dart';
 import '../../../routes/app_routes.dart';
 import '../../../utils/custom_snakebar.dart';
-import '../favorite_controller.dart';
+import '../download_controller/download_controller.dart';
 
 class SongListController extends GetxController {
   final AudioRepo _repo = AudioRepo();
+  // final MusicPlayerController controller = Get.put(MusicPlayerController());
+  final DownloadController downloadController = Get.put(DownloadController());
+
   final RxInt _index = 0.obs;
   RxInt get index => _index;
   var favoriteMap = <String, bool>{}.obs;
@@ -26,7 +30,8 @@ class SongListController extends GetxController {
   }
 
   var isPlaybackLoading = false.obs;
-  var selectedTab = 0.obs; // 0: Popular, 1: Trending, 2: Top Charts, 3: New Releases
+  var selectedTab =
+      0.obs; // 0: Popular, 1: Trending, 2: Top Charts, 3: New Releases
   final List<String> languages = ['English', 'Hindi', 'Punjabi', 'Spanish'];
   var selectedLanguage = 'English'.obs;
 
@@ -76,11 +81,17 @@ class SongListController extends GetxController {
     try {
       final res = await _repo.addToPlaylist(songId);
       if (res['success'] == true) {
-        CustomSnackbar.showSuccess(title: "Success", message: "Added to playlist");
+        CustomSnackbar.showSuccess(
+          title: "Success",
+          message: "Added to playlist",
+        );
         if (index.value == 1) fetchPlaylist();
       }
     } catch (e) {
-      CustomSnackbar.showError(title: "Error", message: "Failed to add to playlist");
+      CustomSnackbar.showError(
+        title: "Error",
+        message: "Failed to add to playlist",
+      );
     }
   }
 
@@ -88,11 +99,17 @@ class SongListController extends GetxController {
     try {
       final res = await _repo.removeFromPlaylist(songId);
       if (res['success'] == true) {
-        CustomSnackbar.showSuccess(title: "Success", message: "Removed from playlist");
+        CustomSnackbar.showSuccess(
+          title: "Success",
+          message: "Removed from playlist",
+        );
         fetchPlaylist();
       }
     } catch (e) {
-      CustomSnackbar.showError(title: "Error", message: "Failed to remove from playlist");
+      CustomSnackbar.showError(
+        title: "Error",
+        message: "Failed to remove from playlist",
+      );
     }
   }
   /// --------------------------------
@@ -115,61 +132,58 @@ class SongListController extends GetxController {
       favoriteSongResponse.value = ApiResponse.error(e.toString());
     }
   }
-/// song play
-  void playSong(String songId) async {
-    try {
-      isPlaybackLoading.value = true;
+  /// song play
+  // void playSong(String songId) async {
+  //   try {
+  //     isPlaybackLoading.value = true;
+  //
+  //     final response = await _repo.getSongPlayData(songId);
+  //
+  //     if (response.success == true && response.playData != null) {
+  //       final data = response.playData!;
+  //
+  //       String finalAudioUrl =
+  //           data.audioPlaybackUrl ?? data.audioUrl ?? "";
+  //
+  //       String finalThumbUrl =
+  //           data.thumbnailPlaybackUrl ?? data.thumbnailUrl ?? "";
+  //
+  //       if (finalAudioUrl.isNotEmpty) {
+  //         Get.toNamed(
+  //           AppRoutes.musicPlay,
+  //           arguments: {
+  //             'id': data.id,
+  //             'url': finalAudioUrl,
+  //             'title': data.title,
+  //             'artist': data.artist,
+  //             'image': finalThumbUrl,
+  //           },
+  //         );
+  //       } else {
+  //         CustomSnackbar.showError(
+  //           title: "Error",
+  //           message: "Audio file not found",
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     CustomSnackbar.showError(
+  //       title: "Error",
+  //       message: "Failed to load song playback",
+  //     );
+  //   } finally {
+  //     isPlaybackLoading.value = false;
+  //   }
+  // }
 
-      final response = await _repo.getSongPlayData(songId);
-
-      if (response.success == true && response.playData != null) {
-        final data = response.playData!;
-
-        String finalAudioUrl =
-            data.audioPlaybackUrl ?? data.audioUrl ?? "";
-
-        String finalThumbUrl =
-            data.thumbnailPlaybackUrl ?? data.thumbnailUrl ?? "";
-
-        if (finalAudioUrl.isNotEmpty) {
-          Get.toNamed(
-            AppRoutes.musicPlay,
-            arguments: {
-              'id': data.id,
-              'url': finalAudioUrl,
-              'title': data.title,
-              'artist': data.artist,
-              'image': finalThumbUrl,
-            },
-          );
-        } else {
-          CustomSnackbar.showError(
-              title: "Error", message: "Audio file not found");
-        }
-      }
-    } catch (e) {
-      print("Playback Error: $e");
-      CustomSnackbar.showError(
-          title: "Error", message: "Failed to load song playback");
-    } finally {
-      isPlaybackLoading.value = false;
-    }
-  }
-
-// Check if this series is already in favorites when page opens
   void toggleFavorite(String songid) async {
     try {
       final isFav = favoriteMap[songid] ?? false;
-
       if (isFav) {
         final res = await _repo.deleteFavoriteSong(songid);
-
         if (res['success'] == true) {
           favoriteMap[songid] = false;
-
-          /// remove from local list
           favoriteSongs.removeWhere((e) => e.id == songid);
-
           CustomSnackbar.showSuccess(
             title: "Removed",
             message: "Removed from favorites",
@@ -183,7 +197,6 @@ class SongListController extends GetxController {
             title: "Added",
             message: "Added to favorites",
           );
-          /// optional: refresh
           fetchFavoriteSong();
         }
       }
@@ -191,15 +204,13 @@ class SongListController extends GetxController {
       print("Error toggling favorite: $e");
     }
   }
-  /// favourite
+
   void filterSongs() {
     if (index.value == 0) {
-      // Filter Songs
       if (allSongs.isEmpty) return;
       List<Song> filtered = _applyFilter(allSongs);
       displaySongs.assignAll(filtered);
     } else {
-      // Filter Playlist
       if (rawPlaylist.isEmpty) {
         displayPlaylist.clear();
         return;
@@ -234,8 +245,10 @@ class SongListController extends GetxController {
   }
 
   void showMoreOptions(int listIndex, {bool isPlaylist = false}) {
-    final song = isPlaylist ? displayPlaylist[listIndex] : displaySongs[listIndex];
-    
+    final song = isPlaylist
+        ? displayPlaylist[listIndex]
+        : displaySongs[listIndex];
+
     Get.bottomSheet(
       Container(
         color: const Color(0xFF1A1A1A),
@@ -244,8 +257,14 @@ class SongListController extends GetxController {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(isPlaylist ? Icons.playlist_remove : Icons.playlist_add, color: Colors.white),
-              title: Text(isPlaylist ? 'Remove from Playlist' : 'Add to Playlist', style: const TextStyle(color: Colors.white)),
+              leading: Icon(
+                isPlaylist ? Icons.playlist_remove : Icons.playlist_add,
+                color: Colors.white,
+              ),
+              title: Text(
+                isPlaylist ? 'Remove from Playlist' : 'Add to Playlist',
+                style: const TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Get.back();
                 if (song.id != null) {
@@ -260,12 +279,47 @@ class SongListController extends GetxController {
             ListTile(
               leading: const Icon(Icons.share, color: Colors.white),
               title: const Text('Share', style: TextStyle(color: Colors.white)),
-              onTap: () => Get.back(),
+              onTap: () {
+                Share.share("${song.title ?? ''} by ${song.artist ?? ''}");
+                Get.back();
+              },
             ),
             ListTile(
               leading: const Icon(Icons.download, color: Colors.white),
-              title: const Text('Download', style: TextStyle(color: Colors.white)),
-              onTap: () => Get.back(),
+              title: const Text(
+                'Download',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () async {
+                Get.back();
+
+                if (song.id != null) {
+                  final playData = await _repo.getSongPlayData(song.id!);
+
+                  if (playData.success == true && playData.playData != null) {
+                    final data = playData.playData!;
+
+                    String finalAudioUrl =
+                        data.audioPlaybackUrl ?? data.audioUrl ?? "";
+
+                    if (finalAudioUrl.isNotEmpty) {
+                      await downloadController.startDownload(
+                        songId: song.id,
+                        contentType: "SONG",
+                        downloadUrl: finalAudioUrl,
+                        title: data.title ?? "",
+                        image: data.thumbnailUrl ?? "",
+                        subtitle: data.artist ?? "",
+                      );
+                    } else {
+                      CustomSnackbar.showError(
+                        title: "Error",
+                        message: "Download link not available",
+                      );
+                    }
+                  }
+                }
+              },
             ),
           ],
         ),

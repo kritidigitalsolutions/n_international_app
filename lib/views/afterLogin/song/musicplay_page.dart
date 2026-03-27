@@ -13,10 +13,8 @@ class MusicPlayerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final MusicPlayerController controller =
-    Get.put(MusicPlayerController());
-    final SongListController favController =
-    Get.put(SongListController());
+    final MusicPlayerController controller = Get.put(MusicPlayerController());
+    final SongListController favController = Get.put(SongListController());
 
     final mediaQuery = MediaQuery.of(context).size;
 
@@ -26,8 +24,11 @@ class MusicPlayerPage extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down,
-              color: AppColors.white, size: 30),
+          icon: const Icon(
+            Icons.keyboard_arrow_down,
+            color: AppColors.white,
+            size: 30,
+          ),
           onPressed: () => Get.back(),
         ),
         centerTitle: true,
@@ -46,10 +47,12 @@ class MusicPlayerPage extends StatelessWidget {
             children: [
               Obx(() {
                 final songId = controller.currentSong.value?.id ?? "";
-                final isFav =
-                songId.isNotEmpty ? (favController.favoriteMap[songId] ?? false) : false;
+                final isFav = songId.isNotEmpty
+                    ? (favController.favoriteMap[songId] ?? false)
+                    : false;
 
-                final playData = controller.songPlayResponse.value.data?.playData;
+                final playData =
+                    controller.songPlayResponse.value.data?.playData;
 
                 return IconButton(
                   icon: Icon(
@@ -76,7 +79,7 @@ class MusicPlayerPage extends StatelessWidget {
                 },
               ),
             ],
-          )
+          ),
         ],
       ),
       body: Stack(
@@ -98,184 +101,204 @@ class MusicPlayerPage extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
-              children: [
-              const SizedBox(height: 40),
-
-              /// 🔥 IMAGE CENTER
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    /// 🎵 ALBUM ART
-                    Obx(() {
-                      final song = controller.currentSong.value;
-                      final playData = controller.songPlayResponse.value.data?.playData;
+                    const SizedBox(height: 40),
 
-                      final imageUrl =
-                          playData?.thumbnailPlaybackUrl ??
-                              playData?.thumbnailUrl ??
-                              song?.thumbnailUrl;
+                    /// 🔥 IMAGE CENTER
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          /// 🎵 ALBUM ART
+                          Obx(() {
+                            final song = controller.currentSong.value;
 
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        height: controller.isPlaying.value ? 280 : 260,
-                        width: controller.isPlaying.value ? 280 : 260,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          image: (imageUrl != null && imageUrl.isNotEmpty)
-                              ? DecorationImage(
-                            image: NetworkImage(imageUrl),
-                            fit: BoxFit.cover,
-                          )
-                              : null,
-                          color: Colors.grey.shade900,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.5),
-                              blurRadius: 20,
-                            )
-                          ],
-                        ),
-                        child: (imageUrl == null || imageUrl.isEmpty)
-                            ? const Center(
-                          child: Icon(
-                            Icons.music_note,
+                            /// 🛑 Safety check
+                            if (song == null) {
+                              return Center(child: CircularProgressIndicator());
+                            }
+
+                            return Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+
+                                /// 🎵 ICON (temporary fix)
+                                Icon(Icons.music_note, size: 120, color: Colors.white),
+
+                                SizedBox(height: 20),
+
+                                /// 🎵 TITLE
+                                Text(
+                                  song.title ?? "No Title",
+                                  style: TextStyle(color: Colors.white, fontSize: 18),
+                                ),
+
+                                SizedBox(height: 20),
+
+                                /// ▶️ PLAY / PAUSE
+                                Obx(() => IconButton(
+                                  iconSize: 60,
+                                  icon: Icon(
+                                    controller.isPlaying.value
+                                        ? Icons.pause
+                                        : Icons.play_arrow,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    if (controller.isPlaying.value) {
+                                      controller.audioPlayer.pause();
+                                    } else {
+                                      controller.audioPlayer.play();
+                                    }
+                                  },
+                                )),
+                              ],
+                            );
+                          })
+                        ],
+                      ),
+                    ),
+
+                    /// 🔽 CONTENT (THODA NICHE)
+                    Column(
+                      children: [
+                        /// 🎵 TITLE
+                        Text(
+                          playData.title ?? "",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
                             color: Colors.white,
-                            size: 80,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
                           ),
-                        )
-                            : null,
-                      );
-                    }),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        /// 🎤 ARTIST
+                        Text(
+                          playData.artist ?? "",
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 16,
+                          ),
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        /// 🎚 SEEK BAR
+                        Obx(() {
+                          return Column(
+                            children: [
+                              Slider(
+                                value: controller.position.value.inSeconds
+                                    .toDouble(),
+                                max: controller.duration.value.inSeconds
+                                    .toDouble()
+                                    .clamp(1, double.infinity),
+                                onChanged: (value) {
+                                  controller.seek(
+                                    Duration(seconds: value.toInt()),
+                                  );
+                                },
+                                activeColor: Colors.red,
+                                inactiveColor: Colors.white24,
+                              ),
+
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    controller.formatTime(
+                                      controller.position.value,
+                                    ),
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                    ),
+                                  ),
+                                  Text(
+                                    controller.formatTime(
+                                      controller.duration.value,
+                                    ),
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        }),
+
+                        const SizedBox(height: 20),
+
+                        /// 🎮 CONTROLS
+                        Obx(() {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.shuffle, color: Colors.white54),
+
+                              const SizedBox(width: 20),
+
+                              const Icon(
+                                Icons.skip_previous,
+                                color: Colors.white,
+                                size: 36,
+                              ),
+
+                              const SizedBox(width: 20),
+
+                              GestureDetector(
+                                onTap: () {
+                                  if (controller.isPlaying.value) {
+                                    controller.togglePlayPause();
+                                  } else {
+                                    final url =
+                                        playData.audioPlaybackUrl ??
+                                        playData.audioUrl;
+                                    if (url != null) {
+                                      controller.playSong(url);
+                                    }
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.red,
+                                  ),
+                                  child: Icon(
+                                    controller.isPlaying.value
+                                        ? Icons.pause
+                                        : Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 36,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 20),
+
+                              const Icon(
+                                Icons.skip_next,
+                                color: Colors.white,
+                                size: 36,
+                              ),
+
+                              const SizedBox(width: 20),
+
+                              const Icon(Icons.repeat, color: Colors.white54),
+                            ],
+                          );
+                        }),
+
+                        const SizedBox(height: 30),
+                      ],
+                    ),
                   ],
                 ),
-              ),
-
-              /// 🔽 CONTENT (THODA NICHE)
-              Column(
-                children: [
-                  /// 🎵 TITLE
-                  Text(
-                    playData.title ?? "",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  /// 🎤 ARTIST
-                  Text(
-                    playData.artist ?? "",
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 16,
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  /// 🎚 SEEK BAR
-                  Obx(() {
-                    return Column(
-                      children: [
-                        Slider(
-                          value: controller.position.value.inSeconds.toDouble(),
-                          max: controller.duration.value.inSeconds
-                              .toDouble()
-                              .clamp(1, double.infinity),
-                          onChanged: (value) {
-                            controller.seek(Duration(seconds: value.toInt()));
-                          },
-                          activeColor: Colors.red,
-                          inactiveColor: Colors.white24,
-                        ),
-
-                        Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              controller.formatTime(controller.position.value),
-                              style:
-                              const TextStyle(color: Colors.white54),
-                            ),
-                            Text(
-                              controller.formatTime(controller.duration.value),
-                              style:
-                              const TextStyle(color: Colors.white54),
-                            ),
-                          ],
-                        )
-                      ],
-                    );
-                  }),
-
-                  const SizedBox(height: 20),
-
-                  /// 🎮 CONTROLS
-                  Obx(() {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.shuffle, color: Colors.white54),
-
-                        const SizedBox(width: 20),
-
-                        const Icon(Icons.skip_previous,
-                            color: Colors.white, size: 36),
-
-                        const SizedBox(width: 20),
-
-                        GestureDetector(
-                          onTap: () {
-                            if (controller.isPlaying.value) {
-                              controller.pauseSong();
-                            } else {
-                              final url = playData.audioPlaybackUrl ??
-                                  playData.audioUrl;
-                              if (url != null) {
-                                controller.playSong(url);
-                              }
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.red,
-                            ),
-                            child: Icon(
-                              controller.isPlaying.value
-                                  ? Icons.pause
-                                  : Icons.play_arrow,
-                              color: Colors.white,
-                              size: 36,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 20),
-
-                        const Icon(Icons.skip_next,
-                            color: Colors.white, size: 36),
-
-                        const SizedBox(width: 20),
-
-                        const Icon(Icons.repeat,
-                            color: Colors.white54),
-                      ],
-                    );
-                  }),
-
-                  const SizedBox(height: 30),
-                ],
-              ),
-              ],
-            ),
               ),
             );
           }),
@@ -289,11 +312,7 @@ class MusicPlayerPage extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color(0xFF0D0D0D),
-            Color(0xFF1A0000),
-            Color(0xFF000000),
-          ],
+          colors: [Color(0xFF0D0D0D), Color(0xFF1A0000), Color(0xFF000000)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

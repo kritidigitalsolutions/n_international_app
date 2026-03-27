@@ -6,6 +6,7 @@ class PlayEpisodeResModel {
   String? otp;
   String? videoPlaybackUrl;
   int? ttl;
+  String? seriesId;
 
   PlayEpisodeResModel({
     this.success,
@@ -16,6 +17,7 @@ class PlayEpisodeResModel {
     this.otp,
     this.videoPlaybackUrl,
     this.ttl,
+    this.seriesId
   });
 
   PlayEpisodeResModel.fromJson(Map<String, dynamic> json) {
@@ -27,5 +29,6 @@ class PlayEpisodeResModel {
     otp = json['otp'];
     videoPlaybackUrl = json['videoPlaybackUrl'];
     ttl = json['ttl'];
+    seriesId = json['seriesId'];
   }
 }

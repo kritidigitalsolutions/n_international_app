@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -17,31 +19,123 @@ class MusicPlayerController extends GetxController {
 
   /// Player State
   var isPlaying = false.obs;
-  var duration = Duration.zero.obs;
-  var position = Duration.zero.obs;
+  var duration = Rx<Duration>(Duration.zero);
+  var position = Rx<Duration>(Duration.zero);
 
   @override
   void onInit() {
     super.onInit();
+    handleArguments();
+    setupListeners();
+  }
+  void handleArguments() {
+    final args = Get.arguments;
+    print("🎵 HANDLE ARGUMENTS: $args");
 
-    /// Get Song
-    if (Get.arguments is Song) {
-      currentSong.value = Get.arguments as Song;
+    if (args == null) return;
 
-      if (currentSong.value?.id != null) {
-        fetchSongPlayData(currentSong.value!.id!);
+    if (args is Map) {
+      currentSong.value = args["song"] ??
+          Song(
+            id: args["id"],
+            title: args["title"],
+            thumbnail: args["image"],
+          );
+
+      String? filePath = args["filePath"];
+      String? url = args["url"];
+      String? id = args["id"];
+
+      /// 🎵 OFFLINE
+      if (filePath != null && filePath.isNotEmpty) {
+        print("🚀 OFFLINE: $filePath");
+
+        songPlayResponse.value = ApiResponse.completed(
+          SongPlayResModel(
+            success: true,
+            playData: PlayData(
+              id: id,
+              title: currentSong.value?.title,
+              artist: args["artist"],
+              audioUrl: filePath,
+              audioPlaybackUrl: filePath,
+              thumbnailUrl: args["image"] ?? currentSong.value?.thumbnail,
+              thumbnailPlaybackUrl: args["image"] ?? currentSong.value?.thumbnail,
+            ),
+          ),
+        );
+
+        playSong(filePath);
+        return;
+      }
+
+      /// 🌐 ONLINE DIRECT URL
+      if (url != null && url.isNotEmpty) {
+        print("🌐 ONLINE URL: $url");
+
+        songPlayResponse.value = ApiResponse.completed(
+          SongPlayResModel(
+            success: true,
+            playData: PlayData(
+              id: id,
+              title: currentSong.value?.title,
+              artist: args["artist"],
+              audioUrl: url,
+              audioPlaybackUrl: url,
+              thumbnailUrl: args["image"],
+              thumbnailPlaybackUrl: args["image"],
+            ),
+          ),
+        );
+
+        playSong(url);
+        return;
+      }
+
+      /// 📡 API CALL
+      if (id != null) {
+        fetchSongPlayData(id);
+        return;
       }
     }
 
-    /// Listen state
+    /// 🎧 NORMAL SONG
+    else if (args is Song) {
+      currentSong.value = args;
+
+      if (args.id != null) {
+        fetchSongPlayData(args.id!);
+      }
+    }
+  }
+
+
+  // void handleArguments() {
+  //   final args = Get.arguments;
+  //
+  //   if (args == null) return;
+  //
+  //   if (args is Song) {
+  //     currentSong.value = args;
+  //
+  //     if (args.id != null) {
+  //       fetchSongPlayData(args.id!);
+  //     }
+  //   }
+  // }
+
+  /// ✅ 2. Fix Player Listeners
+  void setupListeners() {
     audioPlayer.playerStateStream.listen((state) {
       isPlaying.value = state.playing;
+      if (state.processingState == ProcessingState.completed) {
+        audioPlayer.seek(Duration.zero);
+        audioPlayer.pause();
+      }
     });
 
     audioPlayer.durationStream.listen((d) {
-      if (d != null && d.inSeconds > 0) {
-        duration.value = d;
-      }
+      if (d != null) duration.value = d;
     });
 
     audioPlayer.positionStream.listen((p) {
@@ -49,6 +143,7 @@ class MusicPlayerController extends GetxController {
     });
   }
 
+  /// ✅ 3. Fix API Call & URL Priority
   Future<void> fetchSongPlayData(String songId) async {
     songPlayResponse.value = ApiResponse.loading();
 
@@ -75,19 +170,52 @@ class MusicPlayerController extends GetxController {
     }
   }
 
-  Future<void> playSong(String url) async {
-    await audioPlayer.setUrl(url);
-    audioPlayer.play();
+  /// ✅ 4. Fix Play Function (Instant Local Play)
+  Future<void> playSong(String path) async {
+    print("🎧 PLAY REQUEST: $path");
+
+    try {
+      if (path.startsWith("/")) {
+        /// ✅ LOCAL FILE
+        print("📁 LOCAL FILE PLAY");
+        await audioPlayer.setFilePath(path);
+      } else {
+        /// 🌐 NETWORK
+        print("🌐 NETWORK PLAY");
+        await audioPlayer.setUrl(path);
+      }
+
+      audioPlayer.play();
+    } catch (e) {
+      print("❌ AUDIO ERROR: $e");
+    }
   }
 
-  void pauseSong() => audioPlayer.pause();
+  // Future<void> playSong(String url) async {
+  //   print("🎧 PLAYING URL: $url");
+  //
+  //   try {
+  //     await audioPlayer.setUrl(url);
+  //     audioPlayer.play();
+  //   } catch (e) {
+  //     print("❌ AUDIO ERROR: $e");
+  //   }
+  // }
 
-  void seek(Duration position) => audioPlayer.seek(position);
+  void togglePlayPause() {
+    if (audioPlayer.playing) {
+      audioPlayer.pause();
+    } else {
+      audioPlayer.play();
+    }
+  }
+
+  void seek(Duration pos) => audioPlayer.seek(pos);
 
   String formatTime(Duration d) {
-    final minutes = d.inMinutes.remainder(60);
-    final seconds = d.inSeconds.remainder(60);
-    return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
+    final m = d.inMinutes.remainder(60);
+    final s = d.inSeconds.remainder(60);
+    return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
   }
 
   @override
