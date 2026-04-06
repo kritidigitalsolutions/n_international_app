@@ -11,6 +11,8 @@ class SeriesRepo {
 
   Future<SeriesResModel> fetchSeries({int page = 1, int limit = 20}) async {
     try {
+      final token = HiveService.getToken();
+      _api.setToken(token!);
       final response = await _api.getApi("${AppUrls.seriesList}?page=$page&limit=$limit");
       return SeriesResModel.fromJson(response);
     } catch (e) {
@@ -20,6 +22,10 @@ class SeriesRepo {
 
   Future<EpisodeResModel> fetchEpisodes(String seriesId) async {
     try {
+      final token = HiveService.getToken();
+      if (token != null) {
+        _api.setToken(token);
+      }
       final response = await _api.getApi(AppUrls.episodesList(seriesId));
       return EpisodeResModel.fromJson(response);
     } catch (e) {
@@ -66,6 +72,50 @@ class SeriesRepo {
       if (token != null) _api.setToken(token);
       final response = await _api.getApi(AppUrls.playEpisode(episodeId));
       return PlayEpisodeResModel.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> unlockEpisode(String episodeId) async {
+    try {
+      final token = HiveService.getToken();
+      if (token != null) _api.setToken(token);
+      final response = await _api.postApi(AppUrls.unlockEpisode(episodeId), {});
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> likeEpisode(String episodeId) async {
+    try {
+      final token = HiveService.getToken();
+      if (token != null) _api.setToken(token);
+      final response = await _api.postApi(AppUrls.likeEpisode(episodeId), {});
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> dislikeEpisode(String episodeId) async {
+    try {
+      final token = HiveService.getToken();
+      if (token != null) _api.setToken(token);
+      final response = await _api.deleteApi(AppUrls.likeEpisode(episodeId), {});
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> getLikeStatus(String episodeId) async {
+    try {
+      final token = HiveService.getToken();
+      if (token != null) _api.setToken(token);
+      final response = await _api.getApi(AppUrls.likeStatus(episodeId));
+      return response;
     } catch (e) {
       rethrow;
     }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:n_square_international/model/responce/series_res_model/series_res_model.dart';
 import 'package:n_square_international/res/app_colors.dart';
-import 'package:n_square_international/utils/custom_button.dart';
+import 'package:n_square_international/routes/app_routes.dart';
 import 'package:video_player/video_player.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import 'package:n_square_international/viewModel/afterLogin/reel_controller/reel_controller.dart';
@@ -13,152 +14,215 @@ class ReelPage extends StatefulWidget {
   State<ReelPage> createState() => _ReelPageState();
 }
 
-class _ReelPageState extends State<ReelPage> {
-  late ReelController controller;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = Get.put(ReelController());
-  }
+class _ReelPageState extends State<ReelPage> with RouteAware {
+  final ReelController controller = Get.put(ReelController());
+  final PageController _pageController = PageController();
 
   @override
   void dispose() {
-    Get.delete<ReelController>(); // 👈 stop video when leaving page
+    _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<ReelController>(
-      builder: (_) {
-        return Stack(
-          children: [
-            /// VIDEO
-            GestureDetector(
-              onTap: controller.togglePlay,
-              child: controller.videoController.value.isInitialized
-                  ? SizedBox.expand(
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: controller.videoController.value.size.width,
-                          height: controller.videoController.value.size.height,
-                          child: VideoPlayer(controller.videoController),
-                        ),
-                      ),
-                    )
-                  : const Center(child: CircularProgressIndicator()),
-            ),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+        }
 
-            /// Play icon overlay
-            Obx(
-              () => controller.isPlaying.value
-                  ? const SizedBox()
-                  : Center(
-                      child: circleIconButton(
-                        color: AppColors.white,
-                        background: AppColors.white.withAlpha(100),
-                        radius: 30,
-                        icon: Icons.play_arrow,
-                        size: 50,
-                        onPressed: () {
-                          controller.togglePlay();
-                        },
-                      ),
-                    ),
-            ),
+        if (controller.seriesList.isEmpty) {
+          return Center(child: Text("No Reels Available", style: text16(color: Colors.white)));
+        }
 
-            /// Bottom UI
-            Obx(
-              () => controller.showControls.value
-                  ? Positioned(
-                      left: 20,
-                      right: 20,
-                      bottom: 20,
-                      child: SafeArea(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            /// Left text
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Our Secret | 10 episodes",
-                                    style: text20(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    "Two souls bound by a promise they can’t reveal.",
-                                    style: text13(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            /// Right buttons
-                            Column(
-                              children: [
-                                _actionButton(
-                                  Icons.bookmark,
-                                  "Save",
-                                  controller.saveReel,
-                                ),
-                                const SizedBox(height: 12),
-                                _actionButton(
-                                  Icons.play_circle_outline,
-                                  "Episodes",
-                                  controller.goToEpisodes,
-                                ),
-                                const SizedBox(height: 12),
-                                _actionButton(
-                                  Icons.share,
-                                  "Share",
-                                  controller.shareReel,
-                                ),
-                                const SizedBox(height: 12),
-                                Obx(
-                                  () => _actionButton(
-                                    controller.isMuted.value
-                                        ? Icons.volume_off
-                                        : Icons.volume_up,
-                                    "Sound",
-                                    controller.toggleMute,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : const SizedBox(),
-            ),
-          ],
+        return PageView.builder(
+          scrollDirection: Axis.vertical,
+          controller: _pageController,
+          itemCount: controller.seriesList.length,
+          onPageChanged: (index) => controller.onPageChanged(index),
+          itemBuilder: (context, index) {
+            return ReelItem(series: controller.seriesList[index], index: index);
+          },
         );
+      }),
+    );
+  }
+}
+
+class ReelItem extends StatefulWidget {
+  final Series series;
+  final int index;
+  const ReelItem({super.key, required this.series, required this.index});
+
+  @override
+  State<ReelItem> createState() => _ReelItemState();
+}
+
+class _ReelItemState extends State<ReelItem> {
+  late VideoPlayerController _videoController;
+  final ReelController controller = Get.find<ReelController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _videoController = controller.getController(widget.index);
+    // Play if it's the current one
+    if (widget.index == controller.currentIndex.value) {
+      _videoController.play();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        if (details.primaryVelocity! > 0) {
+          Get.toNamed(AppRoutes.seriesDetails, arguments: widget.series);
+        }
       },
+      onTap: () {
+        setState(() {
+          if (_videoController.value.isPlaying) {
+            _videoController.pause();
+          } else {
+            _videoController.play();
+          }
+        });
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          /// 🎬 Full Screen Video (Reel Format)
+          Positioned.fill(
+            child: _videoController.value.isInitialized
+                ? FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _videoController.value.size.width,
+                height: _videoController.value.size.height,
+                child: VideoPlayer(_videoController),
+              ),
+            )
+                : const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          ),
+
+          /// Gradient Overlay for better UI visibility
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black.withOpacity(0.3),
+                  Colors.transparent,
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.7),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+
+          /// Right Side Action Buttons
+          Positioned(
+            right: 15,
+            bottom: 120,
+            child: Column(
+              children: [
+                // Like icon for reels page
+                Obx(() {
+                  final isLiked = controller.likedStatus[widget.series.sId!] ?? false;
+                  final likeCount = controller.likeCounts[widget.series.sId!] ?? 0;
+                  return _actionButton(
+                    icon: isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+                    label: likeCount.toString(),
+                    color: isLiked ? Colors.blue : Colors.white,
+                    onTap: () {
+                      if (widget.series.sId != null) {
+                        controller.toggleLike(widget.series.sId!);
+                      }
+                    },
+                  );
+                }),
+                const SizedBox(height: 25),
+                _actionButton(
+                  icon: Icons.share,
+                  label: "Share",
+                  onTap: () => controller.shareReel(widget.series),
+                ),
+              ],
+            ),
+          ),
+
+          /// Bottom Details & Seek Bar
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 80, // Moved up to avoid navigation bar overlap
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () => Get.toNamed(AppRoutes.seriesDetails, arguments: widget.series),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.series.title ?? "",
+                        style: text24(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.series.description ?? "",
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: text14(color: Colors.white.withOpacity(0.9)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                /// Seek Bar
+                VideoProgressIndicator(
+                  _videoController,
+                  allowScrubbing: true,
+                  colors: VideoProgressColors(
+                    playedColor: AppColors.primary,
+                    bufferedColor: Colors.white.withOpacity(0.3),
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          /// Play Icon Indicator
+          if (!_videoController.value.isPlaying)
+            Center(
+              child: Icon(
+                Icons.play_arrow,
+                size: 80,
+                color: Colors.white.withOpacity(0.5),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _actionButton(IconData icon, String label, VoidCallback onTap) {
+  Widget _actionButton({required IconData icon, required String label, Color color = Colors.white, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.background.withAlpha(150),
-            child: Icon(icon, color: AppColors.white),
-          ),
-          const SizedBox(height: 4),
-          Text(label, style: text12(color: AppColors.textPrimary)),
+          Icon(icon, color: color, size: 35),
+          const SizedBox(height: 5),
+          Text(label, style: text12(color: Colors.white)),
         ],
       ),
     );

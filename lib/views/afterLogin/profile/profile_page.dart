@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/res/app_colors.dart';
@@ -7,18 +5,30 @@ import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
+import 'package:n_square_international/viewModel/afterLogin/user_controller/full_profile_controller.dart';
 
-import '../../../utils/hive_service/hive_service.dart';
 import '../../../viewModel/afterLogin/user_controller/user.controller.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
+  String _getInitials(String name) {
+    if (name.isEmpty) return "U";
+    List<String> parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final userController = Get.put(UserController());
-    final user = HiveService.getUser();
+    final profileController = Get.put(FullProfileController());
+    
     userController.fetchUserName();
+    profileController.fetchUserProfile();
+    
     return Scaffold(
       body: Stack(
         children: [
@@ -38,17 +48,20 @@ class ProfilePage extends StatelessWidget {
                         onTap: () {
                           Get.toNamed(AppRoutes.fullProfile);
                         },
-                        child: CircleAvatar(
-                          radius: 22,
-                          backgroundImage: (user != null && user.image != null && user.image!.isNotEmpty)
-                              ? (user.image!.startsWith('http')
-                              ? NetworkImage(user.image!)
-                              : FileImage(File(user.image!)) as ImageProvider)
-                              : null,
-                          child: (user == null || user.image == null || user.image!.isEmpty)
-                              ? const Icon(Icons.person, size: 40)
-                              : null,
-                        ),
+                        child: Obx(() {
+                          String initials = _getInitials(userController.userName.value);
+                          return CircleAvatar(
+                            radius: 25,
+                            backgroundColor: AppColors.primary,
+                            child: Text(
+                              initials,
+                              style: text18(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        }),
                       ),
                       const SizedBox(width: 12),
                   Obx(() => Text(
@@ -74,7 +87,7 @@ class ProfilePage extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: () {
-                          // recharge action
+                           Get.toNamed(AppRoutes.recharge);
                         },
                         child: Padding(
                           padding: const EdgeInsets.all(20),
@@ -118,46 +131,41 @@ class ProfilePage extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    'Rs 50',
+                                  Obx(() => Text(
+                                    'Rs ${profileController.walletBalance.value}',
                                     style: text20(
                                       fontWeight: FontWeight.bold,
                                       color: AppColors.error,
                                     ),
-                                  ),
+                                  )),
                                 ],
                               ),
 
                               const SizedBox(height: 8),
 
-                              InkWell(
-                                onTap: () {
-                                  Get.toNamed(AppRoutes.recharge);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 15,
-                                    vertical: 12,
-                                  ),
-                                  decoration: decorationBox(30),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Recharge to enjoy more series',
-                                        style: text13(
-                                          color: AppColors.textSecondary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.arrow_forward_ios_rounded,
-                                        size: 16,
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 15,
+                                  vertical: 12,
+                                ),
+                                decoration: decorationBox(30),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Recharge to enjoy more series',
+                                      style: text13(
                                         color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 16,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -185,13 +193,6 @@ class ProfilePage extends StatelessWidget {
                     Get.toNamed(AppRoutes.history);
                   },
                 ),
-                // _buildMenuItem(
-                //   icon: Icons.language,
-                //   title: 'Language',
-                //   onTap: () {
-                //     Get.toNamed(AppRoutes.language);
-                //   },
-                // ),
                 _buildMenuItem(
                   icon: Icons.privacy_tip_outlined,title: 'Privacy Policy',
                   onTap: () => Get.toNamed(AppRoutes.privacyPolicy),
@@ -211,13 +212,6 @@ class ProfilePage extends StatelessWidget {
                   title: 'Contact Us',
                   onTap: () => Get.toNamed(AppRoutes.contactUs),
                 ),
-                // _buildMenuItem(
-                //   icon: Icons.settings,
-                //   title: 'Settings',
-                //   onTap: () {
-                //     Get.toNamed(AppRoutes.setting);
-                //   },
-                // ),
 
                 const SizedBox(height: 40),
                 Padding(

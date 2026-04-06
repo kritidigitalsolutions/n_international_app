@@ -59,7 +59,7 @@ class AppPages {
 
     GetPage(
       name: AppRoutes.recharge,
-      page: () => const RechargeScreen(),
+      page: () => RechargeScreen(),
       transition: Transition.rightToLeft,
     ),
 

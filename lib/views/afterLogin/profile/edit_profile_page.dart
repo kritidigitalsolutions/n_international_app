@@ -1,14 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 
 import 'package:n_square_international/res/app_colors.dart';
 import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 
-import '../../../utils/hive_service/hive_service.dart';
 import '../../../viewModel/afterLogin/user_controller/edit_profile_controller.dart';
 
 class EditProfilePage extends StatelessWidget {
@@ -44,68 +40,6 @@ class EditProfilePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20),
-
-                    /// PROFILE IMAGE WITH GLOW
-                    Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          controller.pickImageWithPermission(ImageSource.gallery);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.primary.withOpacity(0.5), width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.2),
-                                blurRadius: 20,
-                                spreadRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: Obx(() {
-                            // 1. Show the locally picked image if available
-                            if (controller.profileImage.value != null) {
-                              return CircleAvatar(
-                                radius: 55,
-                                backgroundImage: FileImage(controller.profileImage.value!),
-                              );
-                            }
-
-                            // 2. Otherwise, show the existing image from Hive/Server
-                            final user = HiveService.getUser();
-                            if (user != null && user.image != null && user.image!.isNotEmpty) {
-
-                              if (user.image!.startsWith('http')) {
-                                return CircleAvatar(
-                                  radius: 55,
-                                  backgroundImage: NetworkImage(user.image!), // server image
-                                );
-                              } else {
-                                return CircleAvatar(
-                                  radius: 55,
-                                  backgroundImage: FileImage(File(user.image!)), // local image
-                                );
-                              }
-                            }
-
-                            // 3. Fallback to camera icon
-                            return CircleAvatar(
-                              radius: 55,
-                              backgroundColor: AppColors.primary.withOpacity(0.1),
-                              child: const Icon(
-                                Icons.camera_alt_outlined,
-                                size: 30,
-                                color: AppColors.primary,
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                    ),
-
                     const SizedBox(height: 40),
 
                     /// NAME
@@ -157,7 +91,6 @@ class EditProfilePage extends StatelessWidget {
                             ),
                           ),
                           onPressed: () {
-                            print("BUTTON CLICKED");
                             controller.editProfile();
                           },
                           child: Text(

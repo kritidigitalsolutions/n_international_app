@@ -1,21 +1,26 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/res/app_colors.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import '../../../routes/app_routes.dart';
 import '../../../utils/app_components.dart';
-import '../../../utils/hive_service/hive_service.dart';
 import '../../../viewModel/afterLogin/user_controller/full_profile_controller.dart';
 
 class FullProfilePage extends StatelessWidget {
   const FullProfilePage({super.key});
 
+  String _getInitials(String name) {
+    if (name.isEmpty) return "U";
+    List<String> parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(FullProfileController());
-    final user = HiveService.getUser();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -44,7 +49,7 @@ class FullProfilePage extends StatelessWidget {
                   children: [
                     const SizedBox(height: 20),
                     
-                    // Profile Image with Glow
+                    // Profile Initials with Glow
                     Center(
                       child: Container(
                         padding: const EdgeInsets.all(4),
@@ -59,17 +64,21 @@ class FullProfilePage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundImage: (user != null && user.image != null && user.image!.isNotEmpty)
-                              ? (user.image!.startsWith('http')
-                              ? NetworkImage(user.image!)
-                              : FileImage(File(user.image!)) as ImageProvider)
-                              : null,
-                          child: (user == null || user.image == null || user.image!.isEmpty)
-                              ? const Icon(Icons.person, size: 40)
-                              : null,
-                        ),
+                        child: Obx(() {
+                          String initials = _getInitials(controller.name.value);
+                          return CircleAvatar(
+                            radius: 60,
+                            backgroundColor: AppColors.primary,
+                            child: Text(
+                              initials,
+                              style: const TextStyle(
+                                fontSize: 40,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        }),
                       ),
                     ),
                     

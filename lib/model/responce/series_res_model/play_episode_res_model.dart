@@ -1,8 +1,12 @@
 class PlayEpisodeResModel {
-  bool? success;String? provider;
+  bool? success;
+  String? provider;
   String? episodeId;
-  String? videoUrl; // Added for R2
-  String? videoId;  // Keep for backward compatibility
+  bool? unlockedNow;
+  bool? alreadyUnlocked;
+  int? walletBalance;
+  String? videoUrl;
+  String? videoId;
   String? otp;
   String? videoPlaybackUrl;
   int? ttl;
@@ -12,19 +16,25 @@ class PlayEpisodeResModel {
     this.success,
     this.provider,
     this.episodeId,
+    this.unlockedNow,
+    this.alreadyUnlocked,
+    this.walletBalance,
     this.videoUrl,
     this.videoId,
     this.otp,
     this.videoPlaybackUrl,
     this.ttl,
-    this.seriesId
+    this.seriesId,
   });
 
   PlayEpisodeResModel.fromJson(Map<String, dynamic> json) {
     success = json['success'];
     provider = json['provider'];
     episodeId = json['episodeId'];
-    videoUrl = json['videoUrl']; // Added for R2
+    unlockedNow = json['unlockedNow'];
+    alreadyUnlocked = json['alreadyUnlocked'];
+    walletBalance = json['walletBalance'];
+    videoUrl = json['videoUrl'];
     videoId = json['videoId'];
     otp = json['otp'];
     videoPlaybackUrl = json['videoPlaybackUrl'];

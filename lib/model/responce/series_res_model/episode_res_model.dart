@@ -26,6 +26,19 @@ class Episode {
   String? videoUrl;
   int? durationMinutes;
   bool? isLocked;
+  bool? alreadyUnlocked;
+
+  Episode({
+    this.id,
+    this.episodeNumber,
+    this.title,
+    this.description,
+    this.thumbnail,
+    this.videoUrl,
+    this.durationMinutes,
+    this.isLocked,
+    this.alreadyUnlocked,
+  });
 
   Episode.fromJson(Map<String, dynamic> json) {
     id = json['_id'];
@@ -36,5 +49,6 @@ class Episode {
     videoUrl = json['videoUrl'];
     durationMinutes = json['durationMinutes'];
     isLocked = json['isLocked'];
+    alreadyUnlocked = json['alreadyUnlocked'];
   }
 }

@@ -9,6 +9,8 @@ class FullProfileController extends GetxController {
   var phone = "".obs;
   var email = "".obs;
   var image = "".obs;
+  var walletBalance = 0.obs;
+  var starPoints = 0.obs;
   var isLoading = false.obs;
 
   final Dio _dio = Dio();
@@ -46,6 +48,8 @@ class FullProfileController extends GetxController {
         phone.value = user["phone"] ?? "";
         email.value = user["email"] ?? "";
         image.value = user["profileImage"] ?? "";
+        walletBalance.value = user["walletBalance"] ?? 0;
+        starPoints.value = walletBalance.value;
 
       }
 

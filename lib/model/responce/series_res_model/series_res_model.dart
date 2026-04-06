@@ -24,9 +24,11 @@ class SeriesResModel {
 class Series {
   String? sId;
   String? title;
+  String? description;
   String? posterImage;
   String? posterPlaybackUrl;
   String? bannerImage;
+  String? trailerUrl;
   List<String>? languages;
   List<String>? genres;
   int? totalEpisodes;
@@ -40,29 +42,33 @@ class Series {
 
   Series(
       {this.sId,
-      this.posterPlaybackUrl,
-      this.title,
-      this.posterImage,
-      this.bannerImage,
-      this.languages,
-      this.genres,
-      this.totalEpisodes,
-      this.isPopular,
-      this.isTrending,
-      this.isLatest,
-      this.isTopChart,
-      this.isNewRelease,
-      this.isRomantic,
-      this.isRevengeDrama});
+        this.title,
+        this.description,
+        this.posterPlaybackUrl,
+        this.posterImage,
+        this.bannerImage,
+        this.trailerUrl,
+        this.languages,
+        this.genres,
+        this.totalEpisodes,
+        this.isPopular,
+        this.isTrending,
+        this.isLatest,
+        this.isTopChart,
+        this.isNewRelease,
+        this.isRomantic,
+        this.isRevengeDrama});
 
   Series.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];
     title = json['title'];
+    description = json['description'];
     posterImage = json['posterImage'];
     bannerImage = json['bannerImage'];
-    posterPlaybackUrl = json['posterPlaybackUr'];
-    languages = json['languages'].cast<String>();
-    genres = json['genres'].cast<String>();
+    trailerUrl = json['trailerUrl'];
+    posterPlaybackUrl = json['posterPlaybackUrl'];
+    languages = json['languages'] != null ? List<String>.from(json['languages']) : [];
+    genres = json['genres'] != null ? List<String>.from(json['genres']) : [];
     totalEpisodes = json['totalEpisodes'];
     isPopular = json['isPopular'];
     isTrending = json['isTrending'];
@@ -71,5 +77,27 @@ class Series {
     isNewRelease = json['isNewRelease'];
     isRomantic = json['isRomantic'];
     isRevengeDrama = json['isRevengeDrama'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['title'] = title;
+    data['description'] = description;
+    data['posterImage'] = posterImage;
+    data['bannerImage'] = bannerImage;
+    data['trailerUrl'] = trailerUrl;
+    data['posterPlaybackUrl'] = posterPlaybackUrl;
+    data['languages'] = languages;
+    data['genres'] = genres;
+    data['totalEpisodes'] = totalEpisodes;
+    data['isPopular'] = isPopular;
+    data['isTrending'] = isTrending;
+    data['isLatest'] = isLatest;
+    data['isTopChart'] = isTopChart;
+    data['isNewRelease'] = isNewRelease;
+    data['isRomantic'] = isRomantic;
+    data['isRevengeDrama'] = isRevengeDrama;
+    return data;
   }
 }

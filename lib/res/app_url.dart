@@ -1,8 +1,8 @@
 class AppUrls {
 
-  // static const String baseUrl = "http://192.168.1.8:9000/api";
+  // static const String baseUrl = "http://192.168.1.40:9000/api";
   static const String baseUrl = "https://n-square-international.vercel.app/api";
-  // static const String baseImageUrl = "http://192.168.1.8:9000";
+  // static const String baseImageUrl = "http://192.168.1.40:9000";
   static const String baseImageUrl = "https://n-square-international.vercel.app";
 
   //--------------------------------------------------
@@ -33,6 +33,11 @@ class AppUrls {
   static const String seriesList = "$baseUrl/ott/series";
   static String episodesList(String seriesId) => "$seriesList/$seriesId/episodes";
   static String playEpisode(String episodeId) => "$baseUrl/ott/episodes/$episodeId/play";
+  static String unlockEpisode(String episodeId) => "$baseUrl/ott/episodes/$episodeId/unlock";
+
+  // Episode Like
+  static String likeEpisode(String episodeId) => "$baseUrl/ott/episodes/$episodeId/like";
+  static String likeStatus(String episodeId) => "$baseUrl/ott/episodes/$episodeId/like-status";
 
   //-----------------------------------------------------------
   // Favorites
@@ -66,6 +71,13 @@ class AppUrls {
   static const String addHistory = "$baseUrl/library/history";
   static const String getHistory = "$baseUrl/library/history";
   static String deleteHistory(String historyId) => "$baseUrl/library/history/$historyId";
+
+  //-----------------------------------------------------------
+  // Wallet
+  //-----------------------------------------------
+  static const String addMoneyOrder = "$baseUrl/wallet/add-money/order";
+  static const String verifyPayment = "$baseUrl/wallet/add-money/verify";
+
   //-----------------------------------------------------------
   // images
   //-----------------------------------------------

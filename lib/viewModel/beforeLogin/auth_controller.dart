@@ -11,9 +11,9 @@ class LoginController extends GetxController {
   final GlobalKey<FormState> formKey = GlobalKey();
   var isLoading = false.obs;
   var isPrivacyAccepted = false.obs;
-  
+
   final _repo = AuthRepo();
-  
+
   Future<void> submit() async {
     if (!formKey.currentState!.validate()) {
       CustomSnackbar.showError(
@@ -22,7 +22,7 @@ class LoginController extends GetxController {
       );
       return;
     }
-    
+
     if (!isPrivacyAccepted.value) {
       CustomSnackbar.showError(
         title: "Action Required",
@@ -30,14 +30,23 @@ class LoginController extends GetxController {
       );
       return;
     }
-    
+
     isLoading.value = true;
     try {
-      await _repo.sendOtp(ctr.text.trim());
+      final response = await _repo.sendOtp(ctr.text.trim());
+
+      // Check if debug OTP is present in response
+      String successMessage = "Otp send successfully";
+      if (response != null && response['debug'] != null) {
+        successMessage = "OTP sent. Debug code: ${response['debug']}";
+        print("DEBUG OTP => ${response['debug']}");
+      }
+
       CustomSnackbar.showSuccess(
         title: "Success",
-        message: "Otp send successfully",
+        message: successMessage,
       );
+
       Get.toNamed(
         AppRoutes.otp,
         arguments: ctr.text.trim(),

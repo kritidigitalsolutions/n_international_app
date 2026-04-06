@@ -3,229 +3,242 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
-
-import '../../../model/responce/series_res_model/play_episode_res_model.dart';
+import 'package:n_square_international/res/app_colors.dart';
+import 'package:n_square_international/utils/textStyle.dart';
+import '../../../model/responce/series_res_model/episode_res_model.dart';
+import '../../../model/responce/series_res_model/series_res_model.dart';
 import '../../../viewModel/afterLogin/history_controller/histroy_controller.dart';
 import '../../../viewModel/afterLogin/SeriesDetail/series_detail_controller.dart';
+import '../../../repo/series_repo.dart';
 
 class SeriesPosterPlayerPage extends StatefulWidget {
   const SeriesPosterPlayerPage({super.key});
 
   @override
-  State<SeriesPosterPlayerPage> createState() =>
-      _SeriesPosterPlayerPageState();
+  State<SeriesPosterPlayerPage> createState() => _SeriesPosterPlayerPageState();
 }
 
 class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
-  final HistoryController _historyController = Get.put(HistoryController());
-  late SeriesDetailController _seriesController;
+  late PageController _pageController;
+  List<Episode> _episodes = [];
+  int _currentIndex = 0;
+  Series? _series;
 
+  @override
+  void initState() {
+    super.initState();
+    final args = Get.arguments;
+
+    if (args is Map) {
+      _episodes = args['episodes'] ?? [];
+      _currentIndex = args['initialIndex'] ?? 0;
+      _series = args['series'];
+    }
+
+    _pageController = PageController(initialPage: _currentIndex);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_episodes.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: Text("No episodes found", style: TextStyle(color: Colors.white))),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: PageView.builder(
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
+        itemCount: _episodes.length,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        itemBuilder: (context, index) {
+          return VideoReelItem(
+            episode: _episodes[index],
+            series: _series,
+            isCurrent: _currentIndex == index,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class VideoReelItem extends StatefulWidget {
+  final Episode episode;
+  final Series? series;
+  final bool isCurrent;
+
+  const VideoReelItem({
+    super.key,
+    required this.episode,
+    this.series,
+    required this.isCurrent,
+  });
+
+  @override
+  State<VideoReelItem> createState() => _VideoReelItemState();
+}
+
+class _VideoReelItemState extends State<VideoReelItem> {
   VideoPlayerController? _videoPlayerController;
-  ChewieController? _chewieController;
-
   bool _isLoading = true;
-  String? seriesId;
+  bool _isError = false;
+  final SeriesDetailController _seriesController = Get.find<SeriesDetailController>();
+  final HistoryController _historyController = Get.put(HistoryController());
+  final SeriesRepo _repo = SeriesRepo();
   int lastSentSecond = 0;
 
   @override
   void initState() {
     super.initState();
-    _seriesController = Get.put(SeriesDetailController());
-
-    // Lock to Portrait for Reel-style feel
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-
-    final args = Get.arguments;
-    String playbackUrl = "";
-
-    // 👉 Handle Model Arguments (From Series Detail)
-    if (args is PlayEpisodeResModel) {
-      playbackUrl = args.videoPlaybackUrl ?? args.videoUrl ?? "";
-      seriesId = args.videoId ?? args.seriesId;
+    if (widget.isCurrent) {
+      _initializeVideo();
     }
-    // 👉 Handle Map Arguments (From History or Downloads)
-    else if (args is Map) {
-      playbackUrl =
-          args["filePath"] ?? // ✅ OFFLINE
-              args["videoUrl"] ??
-              args["videoPlaybackUrl"] ??
-              "";
-
-      seriesId = args["seriesId"] ?? args["id"];
-    }
-
-    if (seriesId != null && seriesId!.isNotEmpty) {
-      _seriesController.checkIsFavorite(seriesId!);
-    }
-
-    initializePlayer(playbackUrl);
   }
 
-  Future<void> initializePlayer(String url) async {
-    if (url.isEmpty) return;
-    if (mounted) setState(() => _isLoading = true);
+  @override
+  void didUpdateWidget(VideoReelItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isCurrent && !oldWidget.isCurrent) {
+      _initializeVideo();
+    } else if (!widget.isCurrent && oldWidget.isCurrent) {
+      _disposeVideo();
+    }
+  }
+
+  Future<void> _initializeVideo() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+    });
 
     try {
-      // Clean up existing controllers
-      await _videoPlayerController?.dispose();
-      _chewieController?.dispose();
+      // Fetch Like Status for this episode
+      _seriesController.getEpisodeLikeStatus(widget.episode.id!);
 
-      // ✅ FIX: Detect if URL is a local file path (Downloads)
-      bool isLocalFile = url.startsWith('/') ||
-          url.contains('app_flutter') ||
-          !url.startsWith('http');
+      // Fetch playback URL from API
+      final playData = await _repo.playEpisode(widget.episode.id!);
+      String? url = playData.videoPlaybackUrl ?? playData.videoUrl;
 
-      if (isLocalFile) {
-        debugPrint("🚀 Playing Local Offline File: $url");
-        _videoPlayerController = VideoPlayerController.file(File(url));
-      } else {
-        debugPrint("🌐 Playing Network Stream: $url");
-        _videoPlayerController = VideoPlayerController.networkUrl(
-          Uri.parse(url),
-          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-        );
+      if (url == null || url.isEmpty) {
+        throw Exception("Empty video URL");
       }
 
+      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(url));
       await _videoPlayerController!.initialize();
+      _videoPlayerController!.setLooping(true);
+      _videoPlayerController!.play();
 
-      /// ✅ LISTENER FOR HISTORY TRACKING
       _videoPlayerController!.addListener(() {
         if (_videoPlayerController != null &&
             _videoPlayerController!.value.isInitialized &&
             _videoPlayerController!.value.isPlaying) {
 
           final position = _videoPlayerController!.value.position.inSeconds;
-
-          // Sync progress every 10 seconds
           if (position > 0 && position % 10 == 0 && position != lastSentSecond) {
             lastSentSecond = position;
             _sendHistoryToApi(position);
           }
         }
+        if (mounted) setState(() {});
       });
 
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController!,
-        autoPlay: true,
-        looping: false,
-        aspectRatio: _videoPlayerController!.value.aspectRatio,
-        allowFullScreen: true,
-        deviceOrientationsAfterFullScreen: [DeviceOrientation.portraitUp],
-        deviceOrientationsOnEnterFullScreen: [DeviceOrientation.portraitUp],
-        allowMuting: true,
-        showControls: false, // Using custom UI overlays below
-      );
+      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
-      debugPrint("❌ Video Init Error: $e");
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      debugPrint("❌ Video Error: $e");
+      if (mounted) setState(() {
+        _isLoading = false;
+        _isError = true;
+      });
     }
   }
 
-  // Helper to extract IDs and send history
   void _sendHistoryToApi(int position) {
-    final dynamic data = Get.arguments;
-    String sId = "";
-    String eId = "";
-
-    if (data is PlayEpisodeResModel) {
-      sId = data.videoId ?? data.seriesId ?? "";
-      eId = data.episodeId ?? "";
-    } else if (data is Map) {
-      sId = data["seriesId"] ?? "";
-      eId = data["episodeId"] ?? "";
-    }
-
-    if (sId.isNotEmpty) {
-      debugPrint("⏱ Sending History: $position sec for Series: $sId");
+    if (widget.series?.sId != null) {
       _historyController.updateWatchHistory(
-        seriesId: sId,
-        episodeId: eId,
+        seriesId: widget.series!.sId!,
+        episodeId: widget.episode.id ?? "",
         progressSeconds: position,
       );
     }
   }
 
-  @override
-  void dispose() {
-    // ✅ FINAL PROGRESS SAVE ON CLOSE
-    if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized) {
+  void _disposeVideo() {
+    if (_videoPlayerController != null) {
       _sendHistoryToApi(_videoPlayerController!.value.position.inSeconds);
+      _videoPlayerController?.dispose();
+      _videoPlayerController = null;
     }
-
-    // Reset Orientation settings
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-
-    _chewieController?.dispose();
-    _videoPlayerController?.dispose();
-    super.dispose();
   }
 
-  Widget _buildAction(IconData icon, String label, {Color color = Colors.white, VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-        ],
-      ),
-    );
+  @override
+  void dispose() {
+    _disposeVideo();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.red))
-          : _chewieController != null &&
-          _videoPlayerController != null &&
-          _videoPlayerController!.value.isInitialized
-          ? Stack(
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          /// 🎬 FULL SCREEN VIDEO
-          Positioned.fill(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: _videoPlayerController!.value.size.width,
-                height: _videoPlayerController!.value.size.height,
-                child: Chewie(controller: _chewieController!),
-              ),
-            ),
-          ),
-
-          /// ▶ TAP TO PLAY / PAUSE
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _videoPlayerController!.value.isPlaying
-                    ? _videoPlayerController!.pause()
-                    : _videoPlayerController!.play();
-              });
-            },
-            child: Container(
-              color: Colors.transparent,
-              child: Center(
-                child: !_videoPlayerController!.value.isPlaying
-                    ? Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    shape: BoxShape.circle,
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          else if (_isError)
+            const Center(child: Text("Failed to load video", style: TextStyle(color: Colors.white)))
+          else if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _videoPlayerController!.value.isPlaying
+                        ? _videoPlayerController!.pause()
+                        : _videoPlayerController!.play();
+                  });
+                },
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _videoPlayerController!.value.size.width,
+                    height: _videoPlayerController!.value.size.height,
+                    child: VideoPlayer(_videoPlayerController!),
                   ),
-                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 50),
-                )
-                    : const SizedBox(),
+                ),
+              ),
+
+          /// 🌫️ Gradient Overlay
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black.withOpacity(0.3),
+                  Colors.transparent,
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.8),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
           ),
@@ -240,49 +253,78 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
             ),
           ),
 
-          /// 👉 RIGHT SIDE ACTIONS (Favorite, Episodes, etc)
+          /// 👉 RIGHT SIDE ACTIONS
           Positioned(
             right: 15,
-            bottom: 120,
+            bottom: 100,
             child: Column(
               children: [
-                Obx(() => _buildAction(
-                  _seriesController.isFavorite.value ? Icons.bookmark : Icons.bookmark_border,
-                  "Save",
-                  color: _seriesController.isFavorite.value ? Colors.red : Colors.white,
+                // EPISODE LIKE (ThumbUp)
+                Obx(() => _actionButton(
+                  _seriesController.isLiked.value ? Icons.thumb_up : Icons.thumb_up_outlined,
+                  _seriesController.likesCount.value.toString(),
+                  color: _seriesController.isLiked.value ? Colors.blue : Colors.white,
                   onTap: () {
-                    if (seriesId != null) {
-                      _seriesController.toggleFavorite(seriesId!);
-                    }
+                    _seriesController.toggleEpisodeLike(widget.episode.id!);
                   },
                 )),
                 const SizedBox(height: 25),
-                _buildAction(Icons.play_circle_outline, "Episode"),
-                const SizedBox(height: 25),
-                _buildAction(Icons.volume_up, "Sound"),
+
+                _actionButton(Icons.share, "Share", onTap: () {}),
               ],
             ),
           ),
 
-          /// ⏱ PROGRESS BAR
+          /// 📝 BOTTOM DETAILS
           Positioned(
-            left: 15,
-            right: 15,
+            left: 20,
+            right: 80,
             bottom: 40,
-            child: VideoProgressIndicator(
-              _videoPlayerController!,
-              allowScrubbing: true,
-              colors: const VideoProgressColors(
-                playedColor: Colors.red,
-                bufferedColor: Colors.grey,
-                backgroundColor: Colors.white24,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.episode.title ?? widget.series?.title ?? "Episode Playing",
+                  style: text20(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.episode.description ?? "Enjoy your drama",
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: text14(color: Colors.white.withOpacity(0.9)),
+                ),
+                const SizedBox(height: 20),
+                if (_videoPlayerController != null)
+                  VideoProgressIndicator(
+                    _videoPlayerController!,
+                    allowScrubbing: true,
+                    colors: VideoProgressColors(
+                      playedColor: AppColors.primary,
+                      bufferedColor: Colors.white.withOpacity(0.3),
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                    ),
+                  ),
+              ],
             ),
           ),
+
+          if (_videoPlayerController != null && !_videoPlayerController!.value.isPlaying && !_isLoading)
+            const Center(child: Icon(Icons.play_arrow, size: 80, color: Colors.white54)),
         ],
-      )
-          : const Center(
-        child: Text("Failed to load video", style: TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+
+  Widget _actionButton(IconData icon, String label, {Color color = Colors.white, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 35),
+          const SizedBox(height: 5),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        ],
       ),
     );
   }

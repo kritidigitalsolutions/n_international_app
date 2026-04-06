@@ -9,9 +9,9 @@ class AuthRepo {
   final _api = NetworkApiService();
 
   // send otp
-  Future<void> sendOtp(String phone) async {
+  Future<dynamic> sendOtp(String phone) async {
     try {
-      await _api.postApi(AppUrls.sentOtp, {"phone": phone});
+      return await _api.postApi(AppUrls.sentOtp, {"phone": phone});
     } catch (e) {
       rethrow;
     }
@@ -30,7 +30,7 @@ class AuthRepo {
       rethrow;
     }
   }
-/// register
+  /// register
   Future<UserDetailsResModel> registerUser(UserDetailsReqModel model) async {
     try {
       print("📤 REGISTER API CALLED");
