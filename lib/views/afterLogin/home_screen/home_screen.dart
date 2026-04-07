@@ -7,6 +7,7 @@ import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import 'package:n_square_international/viewModel/afterLogin/home_controller.dart';
+import 'package:n_square_international/viewModel/afterLogin/notification_controller.dart';
 
 import '../../../res/app_url.dart';
 
@@ -19,11 +20,87 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ctr = Get.put(HomeController());
+  final notificationCtr = Get.put(NotificationController());
 
   @override
   void initState() {
     super.initState();
     ctr.checkFirstTimeSnackbar();
+  }
+
+  void _showNotificationPopup(BuildContext context) {
+    notificationCtr.fetchNotifications();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.background,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text("Notifications", style: text18(color: AppColors.textPrimary)),
+            IconButton(
+              icon: const Icon(Icons.close, color: AppColors.textPrimary),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: Obx(() {
+            if (notificationCtr.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (notificationCtr.notifications.isEmpty) {
+              return Center(
+                child: Text("No notifications", style: text14(color: AppColors.textSecondary)),
+              );
+            }
+            return ListView.separated(
+              itemCount: notificationCtr.notifications.length,
+              separatorBuilder: (context, index) => const Divider(color: Colors.white24),
+              itemBuilder: (context, index) {
+                final item = notificationCtr.notifications[index];
+                final isUnread = !(item.isRead ?? true);
+
+                return ListTile(
+                  onTap: () {
+                    if (isUnread) {
+                      notificationCtr.markAsRead(item.sId ?? "");
+                    }
+                  },
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    item.title ?? "No Title",
+                    style: text14(
+                      color: AppColors.textPrimary,
+                      fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  subtitle: Text(
+                    item.message ?? "",
+                    style: text12(color: AppColors.textSecondary),
+                  ),
+                  trailing: isUnread
+                      ? const CircleAvatar(radius: 4, backgroundColor: AppColors.error)
+                      : null,
+                );
+              },
+            );
+          }),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              notificationCtr.markAllAsRead();
+              Navigator.pop(context);
+            },
+            child: const Text("Mark all as read", style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -35,25 +112,59 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CustomTextButton(
-                  textColor: AppColors.error,
-                  title: "Drama Series",
-                  onPressed: () {},
+                /// Notification Bell on the left
+                const Expanded(child: SizedBox()),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CustomTextButton(
+                      textColor: AppColors.error,
+                      title: "Drama Series",
+                      onPressed: () {},
+                    ),
+                    Text(
+                      "|",
+                      style: text16(color: AppColors.textPrimary).copyWith(height: 1.5),
+                    ),
+                    CustomTextButton(
+                      textColor: AppColors.white,
+                      title: "Listen Songs",
+                      onPressed: () {
+                        Get.toNamed(AppRoutes.songList);
+                      },
+                    ),
+                  ],
                 ),
-                Text(
-                  "|",
-                  style: text16(color: AppColors.textPrimary).copyWith(height: 1.5),
-                ),
-                CustomTextButton(
-                  textColor: AppColors.white,
-                  title: "Listen Songs",
-                  onPressed: () {
-                    Get.toNamed(AppRoutes.songList);
-                  },
-                ),
+                const Expanded(child: SizedBox()),
+                Obx(() => Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_none, color: Colors.white, size: 28),
+                      onPressed: () => _showNotificationPopup(context),
+                    ),
+                    if (notificationCtr.unreadCount.value > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                          child: Text(
+                            '${notificationCtr.unreadCount.value}',
+                            style: const TextStyle(color: Colors.white, fontSize: 10),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                )),
               ],
+
             ),
 
             /// Search bar
@@ -118,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (ctr.seriesResponse.value.status == Status.loading) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                
+
                 return ListView(
                   physics: const BouncingScrollPhysics(),
                   children: [

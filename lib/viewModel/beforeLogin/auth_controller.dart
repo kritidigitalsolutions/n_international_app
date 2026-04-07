@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/custom_snakebar.dart';
 import '../../repo/auth_repo.dart';
@@ -13,6 +15,8 @@ class LoginController extends GetxController {
   var isPrivacyAccepted = false.obs;
 
   final _repo = AuthRepo();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   Future<void> submit() async {
     if (!formKey.currentState!.validate()) {
@@ -60,7 +64,68 @@ class LoginController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  Future<void> signInWithGoogle() async {
+    try {
+      isLoading.value = true;
+      
+      // Explicitly trigger sign out to ensure account picker appears
+      await _googleSignIn.signOut();
+      
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        isLoading.value = false;
+        return; // User cancelled
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        final userDetails = UserDetails(
+          name: user.displayName ?? "",
+          token: await user.getIdToken() ?? "",
+          phone: user.phoneNumber ?? "",
+          email: user.email ?? "",
+        );
+
+        await HiveService.saveUser(userDetails);
+        
+        CustomSnackbar.showSuccess(
+          title: "Success",
+          message: "Logged in as ${user.displayName}",
+        );
+        
+        Get.offAllNamed(AppRoutes.myHome);
+      }
+    } catch (e) {
+      print("Detailed Google Sign-In Error: $e");
+      String errorMessage = "Google Sign-In failed.";
+      
+      if (e.toString().contains("10")) {
+        errorMessage = "Error 10: SHA-1 fingerprint mismatch. Check Firebase Console.";
+      } else if (e.toString().contains("12500")) {
+        errorMessage = "Error 12500: Sign-in failed. Check your internet or Google Play Services.";
+      } else if (e.toString().contains("7")) {
+        errorMessage = "Error 7: Network error. Please check your connection.";
+      }
+      
+      CustomSnackbar.showError(
+        title: "Sign-In Error",
+        message: errorMessage,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }
+
 /// otp controller
 
 class OtpController extends GetxController {

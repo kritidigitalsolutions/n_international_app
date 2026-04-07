@@ -5,9 +5,12 @@ import 'package:n_square_international/res/app_images.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/custom_button.dart';
+import 'package:n_square_international/viewModel/beforeLogin/auth_controller.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+  WelcomeScreen({super.key});
+
+  final LoginController controller = Get.put(LoginController());
 
   @override
   Widget build(BuildContext context) {
@@ -50,24 +53,32 @@ class WelcomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(AppImages.google, width: 40, height: 40),
-                      const SizedBox(width: 16),
-                      Image.asset(AppImages.fb, width: 50, height: 50),
-                    ],
+                  Obx(() => controller.isLoading.value
+                    ? const CircularProgressIndicator(color: AppColors.primary)
+                    : GestureDetector(
+                        onTap: () => controller.signInWithGoogle(),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(AppImages.google, width: 40, height: 40),
+                            const SizedBox(width: 10),
+                            const Text(
+                              "Sign in with Google",
+                              style: TextStyle(color: Colors.white, fontSize: 16),
+                            )
+                          ],
+                        ),
+                      ),
                   ),
 
-                  SafeArea(
-                    child: CustomGradientButton(
-                      title: "Skip for now",
-                      onPressed: () {
-                        Get.toNamed(AppRoutes.myHome);
-                      },
-                    ),
-                  ),
-
+                  // SafeArea(
+                  //   child: CustomGradientButton(
+                  //     title: "Skip for now",
+                  //     onPressed: () {
+                  //       Get.toNamed(AppRoutes.myHome);
+                  //     },
+                  //   ),
+                  // ),
                   const SizedBox(height: 20),
                 ],
               ),

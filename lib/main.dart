@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
@@ -10,17 +11,29 @@ import 'package:n_square_international/utils/bottom_navigationbar.dart';
 import 'package:n_square_international/utils/hive_service/userdetail.dart';
 import 'package:n_square_international/utils/hive_service/userdetail.g.dart';
 import 'package:n_square_international/viewModel/afterLogin/bottom_nac_controller.dart';
+import 'package:no_screenshot/no_screenshot.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp();
+
   // Initialize Hive
   await Hive.initFlutter();
 
   // Register Hive adapter for UserDetails
-  Hive.registerAdapter(UserDetailsAdapter());
+  if (!Hive.isAdapterRegistered(UserDetailsAdapter().typeId)) {
+    Hive.registerAdapter(UserDetailsAdapter());
+  }
 
   // Open the box
   await Hive.openBox<UserDetails>('userBox');
+
+  // Enable Screenshot and Screen Recording protection
+  final NoScreenshot noScreenshot = NoScreenshot.instance;
+  await noScreenshot.screenshotOff();
+
   runApp(const MyApp());
 }
 
