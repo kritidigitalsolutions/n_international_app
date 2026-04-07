@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
 }
@@ -12,6 +11,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -22,7 +22,10 @@ android {
 
     defaultConfig {
         applicationId = "com.nsquareinternational.app"
+
+        // ✅ IMPORTANT (must be 21 or higher)
         minSdk = flutter.minSdkVersion
+
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -30,9 +33,15 @@ android {
 
     buildTypes {
         release {
+            // TODO: Replace with your release signing config later
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+dependencies {
+    // ✅ REQUIRED for desugaring
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
 flutter {

@@ -1,11 +1,14 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/res/app_colors.dart';
+import 'package:n_square_international/res/app_images.dart';
 import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import 'package:n_square_international/viewModel/beforeLogin/auth_controller.dart';
-import 'package:n_square_international/views/beforeLogin/login_screen.dart';
+import '../../utils/otp_textfield.dart';
+import 'auth_backgrounnd.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -19,9 +22,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     controller.focusNodes[0].requestFocus();
   }
 
@@ -30,85 +31,112 @@ class _OtpScreenState extends State<OtpScreen> {
     return Scaffold(
       body: AuthBackground(
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(
-                  6,
-                  (index) => OtpTextField(
-                    index: index,
-                    controller: controller.otpControllers[index],
-                    focusNode: controller.focusNodes[index],
-                    onChanged: (value) => controller.onOtpChanged(value, index),
-                    onBackspace: controller.handleBackspace,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  /// 🔥 LOGO
+                  Image.asset(
+                    AppImages.logo2,
+                    height: 200,
                   ),
-                ),
+
+                  const SizedBox(height: 20),
+
+                  /// 🔥 GLASS CARD
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            /// TITLE
+                            const Text(
+                              "Verify OTP",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            const SizedBox(height: 6),
+
+                            /// SUBTITLE
+                            const Text(
+                              "Enter the 6-digit code sent to your number",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+
+                            const SizedBox(height: 25),
+
+                            /// OTP BOXES
+                            Row(
+                              mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
+                              children: List.generate(
+                                6,
+                                    (index) => OtpTextField(
+                                  index: index,
+                                  controller:
+                                  controller.otpControllers[index],
+                                  focusNode: controller.focusNodes[index],
+                                  onChanged: (value) =>
+                                      controller.onOtpChanged(value, index),
+                                  onBackspace:
+                                  controller.handleBackspace,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 25),
+
+                            /// CONTINUE BUTTON
+                            Obx(
+                                  () => CustomGradientButton(
+                                title: "Verify & Continue",
+                                isLoading: controller.isLoading.value,
+                                onPressed: controller.submitOtp,
+                              ),
+                            ),
+
+                            const SizedBox(height: 15),
+
+                            /// RESEND
+                            GestureDetector(
+                              onTap: () {
+                                controller.resendOtp();
+                              },
+                              child: const Text(
+                                "Didn't receive OTP? Resend",
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 30),
-
-              Obx(
-                () => CustomGradientButton(
-                  title: "Continue",
-                  isLoading: controller.isLoading.value,
-                  onPressed: controller.submitOtp,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class OtpTextField extends StatelessWidget {
-  final int index;
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final Function(String) onChanged;
-  final Function(int) onBackspace;
-
-  const OtpTextField({
-    super.key,
-    required this.index,
-    required this.controller,
-    required this.focusNode,
-    required this.onChanged,
-    required this.onBackspace,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 55,
-      height: 55,
-      child: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (event) {
-          if (event.logicalKey == LogicalKeyboardKey.backspace) {
-            onBackspace(index);
-          }
-        },
-        child: Container(
-          decoration: decorationBox(5),
-          child: TextFormField(
-            controller: controller,
-            focusNode: focusNode,
-            cursorColor: AppColors.textPrimary,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            maxLength: 1,
-            style: text18(fontWeight: FontWeight.bold),
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              counterText: "",
-
-              border: InputBorder.none,
             ),
-            onChanged: (value) => onChanged(value),
           ),
         ),
       ),

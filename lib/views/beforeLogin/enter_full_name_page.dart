@@ -4,6 +4,8 @@ import 'package:n_square_international/res/app_colors.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/custom_button.dart';
 import 'package:n_square_international/utils/textStyle.dart';
+import 'package:n_square_international/utils/hive_service/hive_service.dart';
+import 'package:n_square_international/utils/hive_service/userdetail.dart';
 
 import '../../model/request/auth_request_model/auth_req_model.dart';
 import '../../repo/auth_repo.dart';
@@ -51,7 +53,20 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
       );
 
       // Call register API
-      await AuthRepo().registerUser(model);
+      final response = await AuthRepo().registerUser(model);
+      
+      if (response.user != null) {
+        // Update Hive with the registered user data
+        final existingUser = HiveService.getUser();
+        final updatedUser = UserDetails(
+          name: response.user?.name ?? nameController.text.trim(),
+          token: response.token ?? existingUser?.token ?? "",
+          phone: response.user?.phone ?? phone,
+          email: existingUser?.email ?? "",
+          image: existingUser?.image ?? "",
+        );
+        await HiveService.saveUser(updatedUser);
+      }
 
       // Navigate to home page after successful registration
       Get.offAllNamed(AppRoutes.myHome);
@@ -72,8 +87,8 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Enter Full Name", style: text16()),
-        leading: iconButton(
-          icon: Icons.arrow_back_ios_outlined,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_outlined),
           onPressed: () {
             Get.back();
           },
@@ -115,7 +130,7 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
                 ),
               ),
             ),
-            SizedBox(height: 40),
+            const SizedBox(height: 40),
 
             CustomButton(title: "Continue", onPressed: () {
               submitName(phone);

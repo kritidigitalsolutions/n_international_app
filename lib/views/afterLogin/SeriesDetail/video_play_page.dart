@@ -23,6 +23,7 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
   List<Episode> _episodes = [];
   int _currentIndex = 0;
   Series? _series;
+  bool _isOffline = false;
 
   @override
   void initState() {
@@ -33,6 +34,7 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
       _episodes = args['episodes'] ?? [];
       _currentIndex = args['initialIndex'] ?? 0;
       _series = args['series'];
+      _isOffline = args['isOffline'] ?? false;
     }
 
     _pageController = PageController(initialPage: _currentIndex);
@@ -75,6 +77,7 @@ class _SeriesPosterPlayerPageState extends State<SeriesPosterPlayerPage> {
             episode: _episodes[index],
             series: _series,
             isCurrent: _currentIndex == index,
+            isOffline: _isOffline,
           );
         },
       ),
@@ -86,12 +89,14 @@ class VideoReelItem extends StatefulWidget {
   final Episode episode;
   final Series? series;
   final bool isCurrent;
+  final bool isOffline;
 
   const VideoReelItem({
     super.key,
     required this.episode,
     this.series,
     required this.isCurrent,
+    this.isOffline = false,
   });
 
   @override
@@ -102,14 +107,25 @@ class _VideoReelItemState extends State<VideoReelItem> {
   VideoPlayerController? _videoPlayerController;
   bool _isLoading = true;
   bool _isError = false;
-  final SeriesDetailController _seriesController = Get.find<SeriesDetailController>();
-  final HistoryController _historyController = Get.put(HistoryController());
+  
+  // Use lazy put to avoid crash if not registered
+  late final SeriesDetailController _seriesController;
+  late final HistoryController _historyController;
+  
   final SeriesRepo _repo = SeriesRepo();
   int lastSentSecond = 0;
 
   @override
   void initState() {
     super.initState();
+    _seriesController = Get.isRegistered<SeriesDetailController>() 
+        ? Get.find<SeriesDetailController>() 
+        : Get.put(SeriesDetailController());
+    
+    _historyController = Get.isRegistered<HistoryController>()
+        ? Get.find<HistoryController>()
+        : Get.put(HistoryController());
+
     if (widget.isCurrent) {
       _initializeVideo();
     }
@@ -133,18 +149,21 @@ class _VideoReelItemState extends State<VideoReelItem> {
     });
 
     try {
-      // Fetch Like Status for this episode
-      _seriesController.getEpisodeLikeStatus(widget.episode.id!);
+      String? url;
 
-      // Fetch playback URL from API
-      final playData = await _repo.playEpisode(widget.episode.id!);
-      String? url = playData.videoPlaybackUrl ?? playData.videoUrl;
+      if (widget.isOffline) {
+        url = widget.episode.videoUrl;
+        if (url == null || url.isEmpty) throw Exception("Local path missing");
+        _videoPlayerController = VideoPlayerController.file(File(url));
+      } else {
+        _seriesController.getEpisodeLikeStatus(widget.episode.id!);
+        final playData = await _repo.playEpisode(widget.episode.id!);
+        url = playData.videoPlaybackUrl ?? playData.videoUrl;
 
-      if (url == null || url.isEmpty) {
-        throw Exception("Empty video URL");
+        if (url == null || url.isEmpty) throw Exception("Empty video URL");
+        _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(url));
       }
 
-      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(url));
       await _videoPlayerController!.initialize();
       _videoPlayerController!.setLooping(true);
       _videoPlayerController!.play();
@@ -155,7 +174,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
             _videoPlayerController!.value.isPlaying) {
 
           final position = _videoPlayerController!.value.position.inSeconds;
-          if (position > 0 && position % 10 == 0 && position != lastSentSecond) {
+          if (!widget.isOffline && position > 0 && position % 10 == 0 && position != lastSentSecond) {
             lastSentSecond = position;
             _sendHistoryToApi(position);
           }
@@ -174,7 +193,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
   }
 
   void _sendHistoryToApi(int position) {
-    if (widget.series?.sId != null) {
+    if (!widget.isOffline && widget.series?.sId != null) {
       _historyController.updateWatchHistory(
         seriesId: widget.series!.sId!,
         episodeId: widget.episode.id ?? "",
@@ -185,7 +204,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
 
   void _disposeVideo() {
     if (_videoPlayerController != null) {
-      _sendHistoryToApi(_videoPlayerController!.value.position.inSeconds);
+      if (!widget.isOffline) _sendHistoryToApi(_videoPlayerController!.value.position.inSeconds);
       _videoPlayerController?.dispose();
       _videoPlayerController = null;
     }
@@ -227,7 +246,6 @@ class _VideoReelItemState extends State<VideoReelItem> {
                 ),
               ),
 
-          /// 🌫️ Gradient Overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -243,7 +261,6 @@ class _VideoReelItemState extends State<VideoReelItem> {
             ),
           ),
 
-          /// 🔙 BACK BUTTON
           Positioned(
             top: 40,
             left: 10,
@@ -253,29 +270,26 @@ class _VideoReelItemState extends State<VideoReelItem> {
             ),
           ),
 
-          /// 👉 RIGHT SIDE ACTIONS
-          Positioned(
-            right: 15,
-            bottom: 100,
-            child: Column(
-              children: [
-                // EPISODE LIKE (ThumbUp)
-                Obx(() => _actionButton(
-                  _seriesController.isLiked.value ? Icons.thumb_up : Icons.thumb_up_outlined,
-                  _seriesController.likesCount.value.toString(),
-                  color: _seriesController.isLiked.value ? Colors.blue : Colors.white,
-                  onTap: () {
-                    _seriesController.toggleEpisodeLike(widget.episode.id!);
-                  },
-                )),
-                const SizedBox(height: 25),
-
-                _actionButton(Icons.share, "Share", onTap: () {}),
-              ],
+          if (!widget.isOffline)
+            Positioned(
+              right: 15,
+              bottom: 100,
+              child: Column(
+                children: [
+                  Obx(() => _actionButton(
+                    _seriesController.isLiked.value ? Icons.thumb_up : Icons.thumb_up_outlined,
+                    _seriesController.likesCount.value.toString(),
+                    color: _seriesController.isLiked.value ? Colors.blue : Colors.white,
+                    onTap: () {
+                      _seriesController.toggleEpisodeLike(widget.episode.id!);
+                    },
+                  )),
+                  const SizedBox(height: 25),
+                  _actionButton(Icons.share, "Share", onTap: () {}),
+                ],
+              ),
             ),
-          ),
 
-          /// 📝 BOTTOM DETAILS
           Positioned(
             left: 20,
             right: 80,

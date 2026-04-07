@@ -68,10 +68,33 @@ class _ReelItemState extends State<ReelItem> {
   void initState() {
     super.initState();
     _videoController = controller.getController(widget.index);
+    _videoController.addListener(_videoListener);
     // Play if it's the current one
     if (widget.index == controller.currentIndex.value) {
       _videoController.play();
     }
+  }
+
+  void _videoListener() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void didUpdateWidget(ReelItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.index != widget.index) {
+      _videoController.removeListener(_videoListener);
+      _videoController = controller.getController(widget.index);
+      _videoController.addListener(_videoListener);
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController.removeListener(_videoListener);
+    super.dispose();
   }
 
   @override

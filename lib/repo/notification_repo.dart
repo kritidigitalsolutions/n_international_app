@@ -7,7 +7,7 @@ class NotificationRepo {
   final Dio _dio = Dio();
 
   Future<NotificationResponse> getNotifications() async {
-    final user = await HiveService.getUser();
+    final user = HiveService.getUser();
     final token = user?.token ?? "";
 
     try {
@@ -32,12 +32,14 @@ class NotificationRepo {
   }
 
   Future<void> readNotification(String notificationId) async {
-    final user = await HiveService.getUser();
+    final user = HiveService.getUser();
     final token = user?.token ?? "";
 
     try {
-      await _dio.get(
+      // API expects PATCH for single notification read
+      await _dio.patch(
         AppUrls.readNotification(notificationId),
+        data: {}, // Some APIs require empty body for PATCH
         options: Options(
           headers: {
             "Authorization": "Bearer $token",
@@ -50,12 +52,14 @@ class NotificationRepo {
   }
 
   Future<void> readAllNotifications() async {
-    final user = await HiveService.getUser();
+    final user = HiveService.getUser();
     final token = user?.token ?? "";
 
     try {
-      await _dio.get(
+      // API expects POST for read-all
+      await _dio.post(
         AppUrls.readallnotification,
+        data: {}, // Some APIs require empty body for POST
         options: Options(
           headers: {
             "Authorization": "Bearer $token",
@@ -64,6 +68,24 @@ class NotificationRepo {
       );
     } catch (e) {
       print("ReadAll Notification API Error: $e");
+    }
+  }
+
+  Future<void> deleteNotification(String notificationId) async {
+    final user = HiveService.getUser();
+    final token = user?.token ?? "";
+
+    try {
+      await _dio.delete(
+        "${AppUrls.notification}/$notificationId",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+    } catch (e) {
+      print("Delete Notification API Error: $e");
     }
   }
 }

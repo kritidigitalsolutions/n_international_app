@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:n_square_international/utils/custom_snakebar.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:n_square_international/viewModel/afterLogin/user_controller/user.controller.dart';
 
 import '../../../model/request/auth_request_model/auth_req_model.dart';
 import '../../../repo/profile_repo.dart';
@@ -41,8 +42,6 @@ class EditProfileController extends GetxController {
       mobileController.text = user.phone ?? "";
 
       if (user.image != null && user.image!.isNotEmpty) {
-        // Only set profileImage if it's a local file path or handle URL appropriately
-        // For now, keeping your logic but being mindful that user.image might be a URL
         if (!user.image!.startsWith('http')) {
            profileImage.value = File(user.image!);
         }
@@ -85,15 +84,9 @@ class EditProfileController extends GetxController {
       // 👉 API call only for text data
       await _repo.editProfile(model);
 
-      print("STEP 1");
-
       final oldUser = HiveService.getUser();
 
-      print("STEP 2: oldUser = $oldUser");
-
       if (oldUser != null) {
-        print("STEP 3: updating user");
-
         oldUser.name = nameController.text.trim();
         oldUser.email = emailController.text.trim();
         oldUser.phone = mobileController.text.trim();
@@ -102,29 +95,29 @@ class EditProfileController extends GetxController {
           oldUser.image = profileImage.value!.path;
         }
 
-        print("STEP 4: saving user");
-
         await HiveService.saveUser(oldUser);
-
-        print("STEP 5: saved");
       }
 
-      print("STEP 6: snackbar");
-      Get.closeAllSnackbars();
+      // Update other controllers immediately
+      if (Get.isRegistered<UserController>()) {
+        Get.find<UserController>().userName.value = nameController.text.trim();
+      }
+      if (Get.isRegistered<FullProfileController>()) {
+        Get.find<FullProfileController>().fetchUserProfile();
+      }
+
       FocusManager.instance.primaryFocus?.unfocus();
 
+      Get.back();
 
       CustomSnackbar.showSuccess(
         title: "Success",
         message: "Profile updated successfully",
       );
 
-      Get.back();
-
     } catch (e) {
       print("CATCH ERROR: $e");
 
-      // 🔥 EVEN IF API FAIL → SAVE LOCAL
       final oldUser = HiveService.getUser();
 
       if (oldUser != null) {
@@ -138,12 +131,17 @@ class EditProfileController extends GetxController {
         await HiveService.saveUser(oldUser);
       }
 
+      // Update other controllers even if API fails (saved locally)
+      if (Get.isRegistered<UserController>()) {
+        Get.find<UserController>().userName.value = nameController.text.trim();
+      }
+
+      Get.back();
+
       CustomSnackbar.showSuccess(
         title: "Saved Locally",
         message: "Profile saved without server",
       );
-
-      Get.back();
 
     } finally {
       isLoading.value = false;

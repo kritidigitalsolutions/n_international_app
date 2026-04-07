@@ -11,9 +11,12 @@ class ReelController extends GetxController {
   var isLoading = true.obs;
   var currentIndex = 0.obs;
 
-  // Like state for each reel (using series ID)
+  // Like state for each reel (using series ID as key)
   var likedStatus = <String, bool>{}.obs;
   var likeCounts = <String, int>{}.obs;
+  
+  // Cache for first episode ID of each series to avoid redundant API calls
+  final Map<String, String> _seriesFirstEpisodeIdCache = {};
 
   final Map<int, VideoPlayerController> controllers = {};
 
@@ -32,18 +35,49 @@ class ReelController extends GetxController {
         list.shuffle();
         seriesList.value = list;
 
-        // Initialize likes for the list
-        for (var series in list) {
-          if (series.sId != null) {
-            likedStatus[series.sId!] = false;
-            likeCounts[series.sId!] = 0;
-          }
+        // Fetch initial status for the first reel
+        if (list.isNotEmpty && list[0].sId != null) {
+          _fetchInitialLikeStatus(list[0].sId!);
         }
       }
     } catch (e) {
       print("Error fetching reels: $e");
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<String?> _getFirstEpisodeId(String seriesId) async {
+    if (_seriesFirstEpisodeIdCache.containsKey(seriesId)) {
+      return _seriesFirstEpisodeIdCache[seriesId];
+    }
+    try {
+      final episodeData = await _repo.fetchEpisodes(seriesId);
+      if (episodeData.episodes != null && episodeData.episodes!.isNotEmpty) {
+        final id = episodeData.episodes![0].id!;
+        _seriesFirstEpisodeIdCache[seriesId] = id;
+        return id;
+      }
+    } catch (e) {
+      print("Error fetching episode for like: $e");
+    }
+    return null;
+  }
+  
+  Future<void> _fetchInitialLikeStatus(String seriesId) async {
+    try {
+      final episodeId = await _getFirstEpisodeId(seriesId);
+      if (episodeId != null) {
+        final response = await _repo.getLikeStatus(episodeId);
+        if (response['success'] == true && response['like'] != null) {
+          likedStatus[seriesId] = response['like']['liked'] ?? false;
+          likeCounts[seriesId] = response['like']['likesCount'] ?? 0;
+          likedStatus.refresh();
+          likeCounts.refresh();
+        }
+      }
+    } catch (e) {
+      print("Error fetching initial like status for $seriesId: $e");
     }
   }
 
@@ -67,10 +101,19 @@ class ReelController extends GetxController {
     currentIndex.value = index;
     getController(index).play();
 
+    // Lazy load like status for current and next reel
+    if (seriesList[index].sId != null) {
+      _fetchInitialLikeStatus(seriesList[index].sId!);
+    }
+    if (index + 1 < seriesList.length && seriesList[index + 1].sId != null) {
+      _fetchInitialLikeStatus(seriesList[index + 1].sId!);
+    }
+
     if (index + 1 < seriesList.length) {
       getController(index + 1);
     }
 
+    // Clean up memory
     controllers.keys.toList().forEach((key) {
       if ((key - index).abs() > 2) {
         controllers[key]?.dispose();
@@ -103,31 +146,38 @@ class ReelController extends GetxController {
     Share.share("Check out this amazing series: ${series.title}\nWatch it on N Square International: ${series.trailerUrl}");
   }
 
-  // Reels are currently trailers of series, so we toggle like based on series ID
-  // Note: Using a generic 'like' method for reels.
   Future<void> toggleLike(String seriesId) async {
     try {
+      final episodeId = await _getFirstEpisodeId(seriesId);
+      if (episodeId == null) return;
+      
       bool currentStatus = likedStatus[seriesId] ?? false;
+
       if (currentStatus) {
-        likedStatus[seriesId] = false;
-        likeCounts[seriesId] = (likeCounts[seriesId] ?? 1) - 1;
+        final response = await _repo.dislikeEpisode(episodeId);
+        if (response['success'] == true) {
+          likedStatus[seriesId] = false;
+          if (response['likesCount'] != null) {
+            likeCounts[seriesId] = response['likesCount'];
+          } else {
+            likeCounts[seriesId] = (likeCounts[seriesId] ?? 1) - 1;
+          }
+        }
       } else {
-        likedStatus[seriesId] = true;
-        likeCounts[seriesId] = (likeCounts[seriesId] ?? 0) + 1;
+        final response = await _repo.likeEpisode(episodeId);
+        if (response['success'] == true) {
+          likedStatus[seriesId] = true;
+          if (response['likesCount'] != null) {
+            likeCounts[seriesId] = response['likesCount'];
+          } else {
+            likeCounts[seriesId] = (likeCounts[seriesId] ?? 0) + 1;
+          }
+        }
       }
       likedStatus.refresh();
       likeCounts.refresh();
     } catch (e) {
       print("Error toggling like on reel: $e");
-    }
-  }
-
-  Future<void> toggleFavorite(String seriesId) async {
-    try {
-      // Reuse the existing favorite logic from repo
-      await _repo.addFavorite(seriesId);
-    } catch (e) {
-      print("Error toggling favorite on reel: $e");
     }
   }
 }

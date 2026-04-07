@@ -426,10 +426,21 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                   bool isDownloaded = downloadController.isDownloaded(episode.id!);
 
                   if (isThisDownloading) {
-                    return const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    double progress = downloadController.downloadProgress[episode.id] ?? 0.0;
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 2,
+                          color: Colors.white,
+                          backgroundColor: Colors.white24,
+                        ),
+                        Text(
+                          "${(progress * 100).toStringAsFixed(0)}%",
+                          style: const TextStyle(color: Colors.white, fontSize: 8),
+                        ),
+                      ],
                     );
                   } else if (isDownloaded) {
                     return const Icon(Icons.check_circle, color: Colors.green);

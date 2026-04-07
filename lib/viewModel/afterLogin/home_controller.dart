@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:n_square_international/data/api_responce_data.dart';
 import 'package:n_square_international/res/app_colors.dart';
 import 'package:n_square_international/utils/textStyle.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../model/responce/series_res_model/series_res_model.dart';
 import '../../repo/series_repo.dart';
 
@@ -19,6 +20,11 @@ class HomeController extends GetxController {
   var revengeSeries = <Series>[].obs;
   var newReleaseSeries = <Series>[].obs;
 
+  /// Search State
+  var searchResults = <Series>[].obs;
+  var isSearching = false.obs;
+  final TextEditingController searchController = TextEditingController();
+
   /// Tabs
   var selectedTabIndex = 0.obs;
 
@@ -31,6 +37,9 @@ class HomeController extends GetxController {
 
   /// 🔥 Dynamic List based on selected tab
   List<Series> get currentSeriesList {
+    if (isSearching.value) {
+      return searchResults;
+    }
     switch (selectedTabIndex.value) {
       case 0:
         return popularSeries;
@@ -87,13 +96,45 @@ class HomeController extends GetxController {
     }
   }
 
+  /// Search API Call
+  Future<void> searchSeries(String query) async {
+    if (query.isEmpty) {
+      isSearching.value = false;
+      searchResults.clear();
+      return;
+    }
+
+    isSearching.value = true;
+    try {
+      final response = await _repo.fetchSeries(search: query);
+      if (response.series != null) {
+        searchResults.assignAll(response.series!);
+      }
+    } catch (e) {
+      print("Search error: $e");
+    }
+  }
+
+  void clearSearch() {
+    searchController.clear();
+    isSearching.value = false;
+    searchResults.clear();
+  }
+
   /// Tab Change
   void changeTab(int index) {
     selectedTabIndex.value = index;
+    // Clear search when switching tabs if you want
+    // isSearching.value = false;
   }
 
   /// Snackbar
   Future<void> checkFirstTimeSnackbar() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isFirstVisit = prefs.getBool('is_first_home_visit') ?? true;
+
+    if (!isFirstVisit) return;
+
     Future.delayed(const Duration(milliseconds: 400), () {
       Get.showSnackbar(
         GetSnackBar(
@@ -147,5 +188,13 @@ class HomeController extends GetxController {
         ),
       );
     });
+
+    await prefs.setBool('is_first_home_visit', false);
+  }
+
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
   }
 }

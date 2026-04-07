@@ -42,7 +42,7 @@ class LoginController extends GetxController {
       // Check if debug OTP is present in response
       String successMessage = "Otp send successfully";
       if (response != null && response['debug'] != null) {
-        successMessage = "OTP sent. Debug code: ${response['debug']}";
+        successMessage = "OTP sent Successfully";
         print("DEBUG OTP => ${response['debug']}");
       }
 
@@ -232,6 +232,41 @@ class OtpController extends GetxController {
       isLoading.value = false;
     }
   }
+  Future<void> resendOtp() async {
+    try {
+      isLoading.value = true;
+
+      final response = await _repo.sendOtp(phone);
+
+      /// Optional debug OTP
+      if (response != null && response['debug'] != null) {
+        print("RESEND DEBUG OTP => ${response['debug']}");
+      }
+
+      /// Clear old OTP fields
+      for (var c in otpControllers) {
+        c.clear();
+      }
+
+      /// Focus first field again
+      focusNodes[0].requestFocus();
+
+      CustomSnackbar.showSuccess(
+        title: "Success",
+        message: "OTP resent successfully",
+      );
+    } catch (e) {
+      print("Resend Error => $e");
+
+      CustomSnackbar.showError(
+        title: "Error",
+        message: "Failed to resend OTP",
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
 
 
   @override

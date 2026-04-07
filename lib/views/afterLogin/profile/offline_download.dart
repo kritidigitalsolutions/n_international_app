@@ -5,11 +5,11 @@ import 'package:n_square_international/res/app_colors.dart';
 import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import '../../../model/responce/audio_res_model/song_res_model.dart';
-import '../../../model/responce/series_res_model/play_episode_res_model.dart';
+import '../../../model/responce/series_res_model/episode_res_model.dart';
+import '../../../model/responce/series_res_model/series_res_model.dart';
 import '../../../routes/app_routes.dart';
 import '../../../utils/custom_button.dart';
 import '../../../viewModel/afterLogin/download_controller/download_controller.dart';
-import '../SeriesDetail/video_play_page.dart';
 
 class OfflineDownloadedScreen extends StatefulWidget {
   const OfflineDownloadedScreen({super.key});
@@ -52,20 +52,13 @@ class _OfflineDownloadedScreenState extends State<OfflineDownloadedScreen> with 
             alignment: Alignment.center,
             child: TabBar(
               controller: _tabController,
-
-              // ❌ REMOVE DEFAULT LINE & INDICATOR
-              indicator: const BoxDecoration(), // no indicator
+              indicator: const BoxDecoration(),
               indicatorColor: Colors.transparent,
-              dividerColor: Colors.transparent, // Flutter 3.7+ fix
-
-              // ✅ TEXT COLORS
-              labelColor: AppColors.error, // selected = RED
+              dividerColor: Colors.transparent,
+              labelColor: AppColors.error,
               unselectedLabelColor: AppColors.white,
-
-              // ✅ STYLE
               labelStyle: text16(fontWeight: FontWeight.bold),
               unselectedLabelStyle: text16(),
-
               tabs: const [
                 Tab(text: "Series"),
                 Tab(text: "Songs"),
@@ -130,7 +123,6 @@ class _OfflineDownloadedScreenState extends State<OfflineDownloadedScreen> with 
             ),
             child: Row(
               children: [
-                // Thumbnail
                 GestureDetector(
                   onTap: () => _playItem(contentType, filePath, id, meta),
                   child: Container(
@@ -149,22 +141,14 @@ class _OfflineDownloadedScreenState extends State<OfflineDownloadedScreen> with 
                         topLeft: Radius.circular(14),
                         bottomLeft: Radius.circular(14),
                       ),
-                      child: Image.network(
-                        image,
-                        width: 90,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.broken_image, color: Colors.white),
-                      ),
+                      child: image.startsWith('http') 
+                        ? Image.network(image, width: 90, height: 100, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white))
+                        : Image.file(File(image), width: 90, height: 100, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white)),
                     )
-                        : Icon(contentType == "EPISODE" ? Icons.movie : Icons
-                        .music_note, color: Colors.white, size: 40),
+                        : Icon(contentType == "EPISODE" ? Icons.movie : Icons.music_note, color: Colors.white, size: 40),
                   ),
                 ),
                 const SizedBox(width: 10),
-
-                // Text Section
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -173,8 +157,7 @@ class _OfflineDownloadedScreenState extends State<OfflineDownloadedScreen> with 
                       children: [
                         Text(
                           title,
-                          style: text16(fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary),
+                          style: text16(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -185,33 +168,25 @@ class _OfflineDownloadedScreenState extends State<OfflineDownloadedScreen> with 
                         ),
                         const Spacer(),
                         GestureDetector(
-                          onTap: () async =>
-                          await controller.removeDownload(id),
-                          child: Text("Remove", style: text13(
-                              color: AppColors.accentRed,
-                              fontWeight: FontWeight.bold)),
+                          onTap: () async => await controller.removeDownload(id),
+                          child: Text("Remove", style: text13(color: AppColors.accentRed, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
                   ),
                 ),
-
-                // Play Button
                 GestureDetector(
                   onTap: () => _playItem(contentType, filePath, id, meta),
                   child: Padding(
                     padding: const EdgeInsets.only(right: 12),
                     child: Container(
                       decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                            colors: [AppColors.accentRed, AppColors.primary]),
+                        gradient: LinearGradient(colors: [AppColors.accentRed, AppColors.primary]),
                         shape: BoxShape.circle,
                       ),
                       child: const Padding(
                         padding: EdgeInsets.all(8),
-                        child: Icon(
-                            Icons.play_arrow_rounded, color: AppColors.white,
-                            size: 22),
+                        child: Icon(Icons.play_arrow_rounded, color: AppColors.white, size: 22),
                       ),
                     ),
                   ),
@@ -225,51 +200,40 @@ class _OfflineDownloadedScreenState extends State<OfflineDownloadedScreen> with 
   }
 
   void _playItem(String contentType, String filePath, String id, dynamic meta) {
-    print("Playing ID: $id | Path: $filePath");
-
-    /// ❌ File check
     if (filePath.isEmpty || !File(filePath).existsSync()) {
-      Get.snackbar(
-        "Error",
-        "File not found on device",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.accentRed,
-        colorText: Colors.white,
-      );
+      Get.snackbar("Error", "File not found on device", snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.accentRed, colorText: Colors.white);
       return;
     }
 
-    /// ===================== 🎬 EPISODE =====================
     if (contentType == "EPISODE") {
-      final playModel = PlayEpisodeResModel(
-        success: true,
-        videoPlaybackUrl: filePath,
+      final episode = Episode(
+        id: id,
+        title: meta["title"] ?? "Offline Episode",
         videoUrl: filePath,
-        seriesId: meta?["id"],
-        episodeId: meta?["episodeId"] ?? "",
+        description: meta["subtitle"] ?? "",
+        thumbnail: meta["image"],
       );
 
       Get.toNamed(
         AppRoutes.videoPlay,
-        arguments: playModel,
+        arguments: {
+          'episodes': [episode],
+          'initialIndex': 0,
+          'series': Series(sId: meta["seriesId"], title: meta["title"]),
+          'isOffline': true,
+        },
       );
-    }
-
-    /// ===================== 🎵 SONG =====================
-    else if (contentType == "SONG") {
-      final songData = meta?["song"];
-
+    } else if (contentType == "SONG") {
+      final songData = meta["song"];
       final song = Song(
         id: songData?["_id"] ?? id,
-        title: songData?["title"] ?? meta?["title"],
-        thumbnail: songData?["thumbnail"] ?? meta?["image"],
+        title: songData?["title"] ?? meta["title"],
+        thumbnail: songData?["thumbnail"] ?? meta["image"],
       );
 
       Get.toNamed(
         AppRoutes.musicPlay,
-        arguments:
-        // song,
-        {
+        arguments: {
           "song": song,
           "filePath": filePath,
         },

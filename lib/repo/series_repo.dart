@@ -9,11 +9,17 @@ import '../utils/hive_service/hive_service.dart';
 class SeriesRepo {
   final _api = NetworkApiService();
 
-  Future<SeriesResModel> fetchSeries({int page = 1, int limit = 20}) async {
+  Future<SeriesResModel> fetchSeries({int page = 1, int limit = 20, String? search}) async {
     try {
       final token = HiveService.getToken();
       _api.setToken(token!);
-      final response = await _api.getApi("${AppUrls.seriesList}?page=$page&limit=$limit");
+      
+      String url = "${AppUrls.seriesList}?page=$page&limit=$limit";
+      if (search != null && search.isNotEmpty) {
+        url += "&search=$search";
+      }
+      
+      final response = await _api.getApi(url);
       return SeriesResModel.fromJson(response);
     } catch (e) {
       rethrow;

@@ -31,33 +31,66 @@ class NotificationController extends GetxController {
   }
 
   Future<void> markAsRead(String notificationId) async {
-    try {
-      await _repo.readNotification(notificationId);
+    final index = notifications.indexWhere((item) => item.sId == notificationId);
+    if (index != -1) {
+      final item = notifications[index];
       
-      // Update local state
-      int index = notifications.indexWhere((item) => item.sId == notificationId);
-      if (index != -1 && notifications[index].isRead == false) {
-        notifications[index].isRead = true;
-        notifications.refresh();
+      // Only proceed if it's currently unread
+      if (item.isRead == false || item.isRead == null) {
+        // 1. Optimistic Update: Immediately update UI
+        item.isRead = true;
+        notifications[index] = item; // Re-assign to trigger update
+        
         if (unreadCount.value > 0) {
           unreadCount.value--;
         }
+        notifications.refresh();
+
+        // 2. Background API Call (PATCH)
+        try {
+          await _repo.readNotification(notificationId);
+        } catch (e) {
+          print("Error marking notification as read: $e");
+          // If the API fails, we could optionally refresh the list
+          // fetchNotifications();
+        }
       }
-    } catch (e) {
-      print("Error marking notification as read: $e");
     }
   }
 
   Future<void> markAllAsRead() async {
+    // 1. Optimistic Update for all
+    for (var item in notifications) {
+      item.isRead = true;
+    }
+    unreadCount.value = 0;
+    notifications.refresh();
+
+    // 2. Background API Call (POST)
     try {
       await _repo.readAllNotifications();
-      unreadCount.value = 0;
-      for (var item in notifications) {
-        item.isRead = true;
-      }
-      notifications.refresh();
     } catch (e) {
       print("Error marking all as read: $e");
+      fetchNotifications(); // Sync back from server on error
+    }
+  }
+
+  Future<void> deleteNotification(String notificationId) async {
+    int index = notifications.indexWhere((item) => item.sId == notificationId);
+    if (index != -1) {
+      bool wasUnread = notifications[index].isRead == false || notifications[index].isRead == null;
+      
+      notifications.removeAt(index);
+      if (wasUnread && unreadCount.value > 0) {
+        unreadCount.value--;
+      }
+      notifications.refresh();
+
+      try {
+        await _repo.deleteNotification(notificationId);
+      } catch (e) {
+        print("Error deleting notification: $e");
+      }
     }
   }
 }

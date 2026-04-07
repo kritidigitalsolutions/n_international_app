@@ -11,6 +11,9 @@ class DownloadController extends GetxController {
   final Dio dio = Dio();
 
   var downloadingIds = <String>[].obs;
+  
+  /// id -> percentage (0 to 100)
+  var downloadProgress = <String, double>{}.obs;
 
   /// id -> file path
   var downloadedFiles = <String, String>{}.obs;
@@ -83,6 +86,7 @@ class DownloadController extends GetxController {
 
     try {
       downloadingIds.add(id);
+      downloadProgress[id] = 0.0;
 
       /// FILE SAVE PATH
       Directory dir = await getApplicationDocumentsDirectory();
@@ -95,7 +99,9 @@ class DownloadController extends GetxController {
         path,
         onReceiveProgress: (rec, total) {
           if (total != -1) {
-            debugPrint("Downloading $id: ${(rec / total * 100).toStringAsFixed(0)}%");
+            double progress = (rec / total);
+            downloadProgress[id] = progress;
+            debugPrint("Downloading $id: ${(progress * 100).toStringAsFixed(0)}%");
           }
         },
       );
@@ -111,6 +117,8 @@ class DownloadController extends GetxController {
         "contentType": contentType,
         "image": image,
         "subtitle": subtitle,
+        "episodeId": episodeId,
+        "seriesId": seriesId,
 
         // ✅ ADD THIS (VERY IMPORTANT)
         "song": {
@@ -136,6 +144,7 @@ class DownloadController extends GetxController {
           backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
       downloadingIds.remove(id);
+      downloadProgress.remove(id);
     }
   }
 
