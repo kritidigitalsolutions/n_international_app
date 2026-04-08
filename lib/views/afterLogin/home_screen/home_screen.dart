@@ -390,6 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: TextField(
                 controller: ctr.searchController,
                 onChanged: (value) => ctr.searchSeries(value),
+                cursorColor: AppColors.error,
                 style: text14(color: AppColors.textPrimary),
                 textAlignVertical: TextAlignVertical.center,
                 decoration: InputDecoration(
@@ -430,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Obx(() {
                 if (ctr.seriesResponse.value.status == Status.loading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator(color: AppColors.primary));
                 }
                 if (ctr.isSearching.value) {
                   if (ctr.searchResults.isEmpty) {
@@ -553,7 +554,7 @@ class SeriesCarousel extends StatelessWidget {
     return Obx(() {
       final seriesList = ctr.currentSeriesList;
       if (seriesList.isEmpty) {
-        if (ctr.seriesResponse.value.status == Status.loading) return const SizedBox(height: 350, child: Center(child: CircularProgressIndicator()));
+        if (ctr.seriesResponse.value.status == Status.loading) return const SizedBox(height: 350, child: Center(child: CircularProgressIndicator(color: AppColors.primary, backgroundColor: Colors.white24,)));
         return const Center(child: Text("No series found", style: TextStyle(color: Colors.white)));
       }
       return CarouselSlider.builder(

@@ -36,7 +36,7 @@ class TermsConditionsPage extends StatelessWidget {
           Obx(() {
             switch (controller.termsConditions.value.status) {
               case Status.loading:
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator(color: AppColors.primary));
               case Status.error:
                 return Center(
                   child: Text(

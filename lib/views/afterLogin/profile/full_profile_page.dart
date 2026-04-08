@@ -97,8 +97,8 @@ class FullProfilePage extends StatelessWidget {
                           Obx(() => _buildInfoRow(Icons.person_outline, "Full Name", controller.name.value)),
                           const Divider(height: 32, color: AppColors.white, thickness: 0.1),
                           Obx(() => _buildInfoRow(Icons.phone_android_outlined, "Phone", controller.phone.value)),
-                          const Divider(height: 32, color: AppColors.white, thickness: 0.1),
-                          Obx(() => _buildInfoRow(Icons.email_outlined, "Email", controller.email.value)),
+                          // const Divider(height: 32, color: AppColors.white, thickness: 0.1),
+                          // Obx(() => _buildInfoRow(Icons.email_outlined, "Email", controller.email.value)),
                         ],
                       ),
                     ),
@@ -106,28 +106,28 @@ class FullProfilePage extends StatelessWidget {
                     const SizedBox(height: 40),
 
                     // Edit Profile Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          elevation: 8,
-                          shadowColor: AppColors.primary.withOpacity(0.4),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          Get.toNamed(AppRoutes.editProfile);
-                        },
-                        child: Text(
-                          "Edit Profile",
-                          style: text16(color: AppColors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
+                    // SizedBox(
+                    //   width: double.infinity,
+                    //   height: 56,
+                    //   child: ElevatedButton(
+                    //     style: ElevatedButton.styleFrom(
+                    //       backgroundColor: AppColors.primary,
+                    //       foregroundColor: AppColors.white,
+                    //       elevation: 8,
+                    //       shadowColor: AppColors.primary.withOpacity(0.4),
+                    //       shape: RoundedRectangleBorder(
+                    //         borderRadius: BorderRadius.circular(16),
+                    //       ),
+                    //     ),
+                    //     onPressed: () {
+                    //       Get.toNamed(AppRoutes.editProfile);
+                    //     },
+                    //     child: Text(
+                    //       "Edit Profile",
+                    //       style: text16(color: AppColors.white, fontWeight: FontWeight.bold),
+                    //     ),
+                    //   ),
+                    // ),
                     const SizedBox(height: 20),
                   ],
                 ),

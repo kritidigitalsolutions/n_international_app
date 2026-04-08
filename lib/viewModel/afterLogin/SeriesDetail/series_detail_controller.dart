@@ -14,6 +14,7 @@ class SeriesDetailController extends GetxController {
   var episodesResponse = ApiResponse<EpisodeResModel>.loading().obs;
   var playEpisodeResponse = ApiResponse<PlayEpisodeResModel>.loading().obs;
   var isFavorite = false.obs;
+  var isFavoriteLoading = false.obs;
   var isUnlocking = false.obs;
 
   // Track locally unlocked episodes
@@ -34,7 +35,7 @@ class SeriesDetailController extends GetxController {
       // Initialize episodes list
       episodesResponse.value = ApiResponse.completed(response);
 
-      // Fetch status for each episode using the play API as requested
+      // Fetch status for each episode as soon as possible
       if (response.episodes != null) {
         _checkAllEpisodesUnlockStatus(response.episodes!);
       }
@@ -45,7 +46,7 @@ class SeriesDetailController extends GetxController {
     }
   }
 
-  // Method to check unlock status using the play API: {{baseUrl}}/ott/episodes/{{episodeId}}/play
+  // Optimized method to update UI as soon as each episode status is received
   Future<void> _checkAllEpisodesUnlockStatus(List<Episode> episodes) async {
     final futures = episodes.map((episode) async {
       try {
@@ -66,7 +67,7 @@ class SeriesDetailController extends GetxController {
     episodesResponse.refresh(); // Trigger UI update once status is fetched
   }
 
-  // Check if this series is already in favorites when page opens
+  // Check if this series is already in favorites
   void checkIsFavorite(String seriesId) async {
     try {
       final res = await _repo.fetchFavorites();
@@ -80,6 +81,8 @@ class SeriesDetailController extends GetxController {
 
   void toggleFavorite(String seriesId) async {
     try {
+      isFavoriteLoading.value = true;
+
       if (isFavorite.value) {
         final res = await _repo.deleteFavorite(seriesId);
         if (res['success'] == true) {
@@ -101,6 +104,8 @@ class SeriesDetailController extends GetxController {
       }
     } catch (e) {
       print("Error toggling favorite: $e");
+    } finally {
+      isFavoriteLoading.value = false;
     }
   }
 

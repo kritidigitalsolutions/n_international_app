@@ -126,7 +126,19 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                               ],
                             ),
                           ),
-                          Obx(() => IconButton(
+                          Obx(() => controller.isFavoriteLoading.value
+                              ? const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primary, // Yellow/Gold
+                                    ),
+                                  ),
+                                )
+                              : IconButton(
                             icon: Icon(
                               controller.isFavorite.value ? Icons.favorite : Icons.favorite_border,
                               color: controller.isFavorite.value ? AppColors.error : AppColors.white,
@@ -183,7 +195,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                       child: Obx(() {
                         switch (controller.episodesResponse.value.status) {
                           case Status.loading:
-                            return const Center(child: CircularProgressIndicator());
+                            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
                           case Status.error:
                             return Center(
                               child: Text(
@@ -331,7 +343,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
           Obx(() => controller.isUnlocking.value
               ? Container(
               color: Colors.black45,
-              child: const Center(child: CircularProgressIndicator()))
+              child: const Center(child: CircularProgressIndicator(color: AppColors.accentRed)))
               : const SizedBox.shrink()),
         ],
       ),
@@ -433,7 +445,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                         CircularProgressIndicator(
                           value: progress,
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: AppColors.primary, // Yellow/Gold
                           backgroundColor: Colors.white24,
                         ),
                         Text(

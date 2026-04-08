@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:n_square_international/res/app_colors.dart';
 import 'package:n_square_international/utils/app_components.dart';
 import 'package:n_square_international/utils/custom_button.dart';
-import 'package:n_square_international/utils/hive_service/hive_service.dart';
 import 'package:n_square_international/utils/textStyle.dart';
 import 'package:n_square_international/viewModel/afterLogin/wallet_controller.dart';
 
@@ -30,9 +29,7 @@ class RechargeScreen extends StatelessWidget {
       body: Stack(
         children: [
           backgroundGradient(),
-          Obx(() => controller.isLoading.value
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
+          SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
             child: SafeArea(
               child: Column(
@@ -45,7 +42,6 @@ class RechargeScreen extends StatelessWidget {
                         'Add Money to Wallet',
                         style: text20(fontWeight: FontWeight.w600),
                       ),
-                      // Current balance or status can go here
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -146,17 +142,18 @@ class RechargeScreen extends StatelessWidget {
 
                   const SizedBox(height: 40),
 
-                  CustomButton(
+                  Obx(() => CustomButton(
                     title: "Continue to Pay",
+                    isLoading: controller.isLoading.value,
                     onPressed: () {
                       controller.startRecharge();
                     },
                     textColor: AppColors.textPrimary,
-                  ),
+                  )),
                 ],
               ),
             ),
-          )),
+          ),
         ],
       ),
     );

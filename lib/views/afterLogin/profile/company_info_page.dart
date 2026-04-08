@@ -37,7 +37,7 @@ class CompanyInfoPage extends StatelessWidget {
           Obx(() {
             switch (controller.aboutUs.value.status) {
               case Status.loading:
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator(color: AppColors.primary));
               case Status.error:
                 return Center(
                   child: Text(
