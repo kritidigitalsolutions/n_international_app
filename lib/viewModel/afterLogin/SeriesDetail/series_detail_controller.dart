@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/api_responce_data.dart';
 import '../../../model/responce/series_res_model/episode_res_model.dart';
 import '../../../model/responce/series_res_model/play_episode_res_model.dart';
@@ -16,6 +17,7 @@ class SeriesDetailController extends GetxController {
   var isFavorite = false.obs;
   var isFavoriteLoading = false.obs;
   var isUnlocking = false.obs;
+  var isInitialLoading = true.obs;
 
   // Track locally unlocked episodes
   var locallyUnlockedIds = <String>{}.obs;
@@ -24,50 +26,95 @@ class SeriesDetailController extends GetxController {
   var isLiked = false.obs;
   var likesCount = 0.obs;
 
-  void fetchEpisodes(String seriesId) async {
-    if (episodesResponse.value.data == null) {
-      episodesResponse.value = ApiResponse.loading();
+  @override
+  void onInit() {
+    super.onInit();
+    // Start loading local data immediately
+    _loadUnlockedEpisodes();
+  }
+
+  Future<void> _loadUnlockedEpisodes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList("unlocked_episodes") ?? [];
+      locallyUnlockedIds.addAll(list);
+    } catch (e) {
+      print("Error loading unlocked episodes: $e");
     }
+  }
+
+  Future<void> _saveUnlockedEpisode(String episodeId) async {
+    if (!locallyUnlockedIds.contains(episodeId)) {
+      locallyUnlockedIds.add(episodeId);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList("unlocked_episodes", locallyUnlockedIds.toList());
+      } catch (e) {
+        print("Error saving unlocked episode: $e");
+      }
+    }
+  }
+
+  void fetchEpisodes(String seriesId) async {
+    isInitialLoading.value = true;
 
     try {
+      await _loadUnlockedEpisodes();
+
       final response = await _repo.fetchEpisodes(seriesId);
 
-      // Initialize episodes list
+      if (response.episodes != null) {
+        for (var episode in response.episodes!) {
+
+          /// ✅ ONLY per episode check
+          if (episode.id != null &&
+              (locallyUnlockedIds.contains(episode.id) ||
+                  episode.alreadyUnlocked == true)) {
+
+            episode.alreadyUnlocked = true;
+          } else {
+            episode.alreadyUnlocked = false;
+          }
+        }
+      }
+
       episodesResponse.value = ApiResponse.completed(response);
 
-      // Fetch status for each episode as soon as possible
-      if (response.episodes != null) {
-        _checkAllEpisodesUnlockStatus(response.episodes!);
-      }
     } catch (e) {
-      if (episodesResponse.value.data == null) {
-        episodesResponse.value = ApiResponse.error(e.toString());
-      }
+      episodesResponse.value = ApiResponse.error(e.toString());
+    } finally {
+      isInitialLoading.value = false;
     }
   }
 
-  // Optimized method to update UI as soon as each episode status is received
-  Future<void> _checkAllEpisodesUnlockStatus(List<Episode> episodes) async {
-    final futures = episodes.map((episode) async {
-      try {
-        final playData = await _repo.playEpisode(episode.id!);
-        // Use alreadyUnlocked from the play API response
-        episode.alreadyUnlocked = playData.alreadyUnlocked;
+  // Future<void> _checkAllEpisodesUnlockStatus(List<Episode> episodes) async {
+  //   for (var episode in episodes) {
+  //     // If already marked as unlocked, skip network check
+  //     if (episode.id == null ||
+  //         episode.isLocked == false ||
+  //         episode.alreadyUnlocked == true ||
+  //         locallyUnlockedIds.contains(episode.id)) {
+  //
+  //       // Sync local cache if server says it's unlocked but we don't have it
+  //       if ((episode.isLocked == false || episode.alreadyUnlocked == true) && episode.id != null) {
+  //         _saveUnlockedEpisode(episode.id!);
+  //       }
+  //       continue;
+  //     }
+  //
+  //     // Check server for current status
+  //     _repo.playEpisode(episode.id!).then((playData) {
+  //       if (playData.alreadyUnlocked == true) {
+  //         episode.alreadyUnlocked = true;
+  //         _saveUnlockedEpisode(episode.id!);
+  //         episodesResponse.refresh(); // Trigger UI update
+  //       }
+  //     }).catchError((e) {
+  //       // Silent error for background check
+  //     });
+  //   }
+  // }
 
-        if (episode.alreadyUnlocked == true) {
-          locallyUnlockedIds.add(episode.id!);
-        }
-      } catch (e) {
-        // If play API fails or returns error, we assume it's locked
-        episode.alreadyUnlocked = false;
-      }
-    }).toList();
-
-    await Future.wait(futures);
-    episodesResponse.refresh(); // Trigger UI update once status is fetched
-  }
-
-  // Check if this series is already in favorites
   void checkIsFavorite(String seriesId) async {
     try {
       final res = await _repo.fetchFavorites();
@@ -149,8 +196,8 @@ class SeriesDetailController extends GetxController {
           profileController.fetchUserProfile();
         }
 
-        // Add to local unlocked set
-        locallyUnlockedIds.add(episodeId);
+        // Persist unlock status
+        await _saveUnlockedEpisode(episodeId);
 
         // Update local state immediately
         if (episodesResponse.value.data != null && episodesResponse.value.data!.episodes != null) {
@@ -161,7 +208,7 @@ class SeriesDetailController extends GetxController {
           }
         }
 
-        // Refresh status using play API to ensure everything is in sync
+        // Refresh series data
         fetchEpisodes(seriesId);
 
       } else {
@@ -173,8 +220,6 @@ class SeriesDetailController extends GetxController {
       isUnlocking.value = false;
     }
   }
-
-  // --- Episode Like Methods ---
 
   Future<void> getEpisodeLikeStatus(String episodeId) async {
     try {

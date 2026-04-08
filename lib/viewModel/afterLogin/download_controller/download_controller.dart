@@ -90,6 +90,20 @@ class DownloadController extends GetxController {
 
       /// FILE SAVE PATH
       Directory dir = await getApplicationDocumentsDirectory();
+
+      /// DOWNLOAD IMAGE LOCALLY
+      String? localImagePath;
+      if (image != null && image.isNotEmpty) {
+        try {
+          final imageExt = image.split('.').last.split('?').first;
+          localImagePath = "${dir.path}/${id}_thumb.${imageExt.length > 4 ? 'jpg' : imageExt}";
+          await dio.download(image, localImagePath);
+          debugPrint("Image Downloaded: $localImagePath");
+        } catch (e) {
+          debugPrint("Image Download Error: $e");
+        }
+      }
+
       final extension = contentType == "SONG" ? "mp3" : "mp4";
       String path = "${dir.path}/$id.$extension";
 
@@ -115,7 +129,7 @@ class DownloadController extends GetxController {
         "title": title,
         "filePath": path,
         "contentType": contentType,
-        "image": image,
+        "image": localImagePath ?? image, // Save local path if download successful
         "subtitle": subtitle,
         "episodeId": episodeId,
         "seriesId": seriesId,
@@ -124,7 +138,7 @@ class DownloadController extends GetxController {
         "song": {
           "_id": songId,
           "title": title,
-          "thumbnail": image,
+          "thumbnail": localImagePath ?? image,
         }
       };
 
@@ -168,6 +182,16 @@ class DownloadController extends GetxController {
       if (downloadedFiles.containsKey(id)) {
         final file = File(downloadedFiles[id]!);
         if (file.existsSync()) file.deleteSync();
+
+        // Delete local image if exists
+        final meta = downloadedMeta[id];
+        if (meta != null && meta["image"] != null) {
+          final imagePath = meta["image"];
+          if (imagePath != null && !imagePath.startsWith("http")) {
+            final imageFile = File(imagePath);
+            if (imageFile.existsSync()) imageFile.deleteSync();
+          }
+        }
       }
 
       downloadedFiles.remove(id);

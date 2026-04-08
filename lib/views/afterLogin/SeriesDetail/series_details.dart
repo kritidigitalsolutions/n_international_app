@@ -193,9 +193,19 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Obx(() {
+                        /// 🔥 FIX: Wait until local + API data ready
+                        if (controller.isInitialLoading.value) {
+                          return const Center(
+                            child: CircularProgressIndicator(color: AppColors.primary),
+                          );
+                        }
+
                         switch (controller.episodesResponse.value.status) {
                           case Status.loading:
-                            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                            return const Center(
+                              child: CircularProgressIndicator(color: AppColors.primary),
+                            );
+
                           case Status.error:
                             return Center(
                               child: Text(
@@ -203,8 +213,10 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                                 style: const TextStyle(color: Colors.white),
                               ),
                             );
+
                           case Status.completed:
                             final episodes = controller.episodesResponse.value.data?.episodes ?? [];
+
                             if (episodes.isEmpty) {
                               return const Center(
                                 child: Text(
@@ -213,13 +225,15 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                                 ),
                               );
                             }
+
                             return Column(
                               children: episodes.map((episode) => _episodeTile(episode)).toList(),
                             );
+
                           default:
                             return const SizedBox();
                         }
-                      }),
+                      })
                     ),
 
                     const SizedBox(height: 20),
@@ -352,11 +366,9 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
 
   Widget _episodeTile(Episode episode) {
     // An episode is UNLOCKED if any of these are true:
-    bool isUnlocked = (episode.isLocked == false) ||
-        (episode.alreadyUnlocked == true) ||
-        (controller.locallyUnlockedIds.contains(episode.id));
-
+    bool isUnlocked = episode.alreadyUnlocked == true;
     bool isLocked = !isUnlocked;
+    // bool isLocked = !isUnlocked;
 
     return GestureDetector(
       onTap: () {
@@ -468,7 +480,8 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                       downloadUrl: episode.videoUrl!,
                       contentType: "EPISODE",
                       title: series.title!,
-
+                      image: episode.thumbnail,
+                      subtitle: "Episode ${episode.episodeNumber}: ${episode.title ?? ''}",
                     );
                   } else {
                     Get.snackbar("Error", "ID missing for download");

@@ -104,7 +104,7 @@ class _FavoriteScreenState extends State<FavoriteScreen>
       switch (controller.favoriteResponse.value.status) {
 
         case Status.loading:
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
 
         case Status.error:
           return Center(
@@ -212,25 +212,42 @@ class _FavoriteScreenState extends State<FavoriteScreen>
                   style: text12(color: AppColors.textSecondary),
                 ),
 
-                trailing: IconButton(
-                  icon: const Icon(Icons.favorite, color: Colors.red),
-                  onPressed: () {
-                    if (song.id != null) {
-                      songcontroller.toggleFavorite(song.id!);
-                    }
-                  },
-                ),
-                  onTap: () {
-                    Get.toNamed(
-                      AppRoutes.musicPlay,
-                      arguments: Song(
-                        id: song.id,
-                        title: song.title,
-                        artist: song.artist,
-                        thumbnailUrl: song.thumbnailUrl,
+                trailing: Obx(() {
+                  final isLoading = song.id != null
+                      ? (songcontroller.favoriteLoadingMap[song.id!] ?? false)
+                      : false;
+
+                  if (isLoading) {
+                    return const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
                       ),
                     );
                   }
+
+                  return IconButton(
+                    icon: const Icon(Icons.favorite, color: Colors.red),
+                    onPressed: () {
+                      if (song.id != null) {
+                        songcontroller.toggleFavorite(song.id!);
+                      }
+                    },
+                  );
+                }),
+                onTap: () {
+                  Get.toNamed(
+                    AppRoutes.musicPlay,
+                    arguments: Song(
+                      id: song.id,
+                      title: song.title,
+                      artist: song.artist,
+                      thumbnailUrl: song.thumbnailUrl,
+                    ),
+                  );
+                }
               );
             },
           );

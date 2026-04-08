@@ -25,7 +25,7 @@ class MusicPlayerPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
-            Icons.keyboard_arrow_down,
+            Icons.arrow_back,
             color: AppColors.white,
             size: 30,
           ),
@@ -50,9 +50,26 @@ class MusicPlayerPage extends StatelessWidget {
                 final isFav = songId.isNotEmpty
                     ? (favController.favoriteMap[songId] ?? false)
                     : false;
+                final isLoading = songId.isNotEmpty
+                    ? (favController.favoriteLoadingMap[songId] ?? false)
+                    : false;
 
                 final playData =
                     controller.songPlayResponse.value.data?.playData;
+
+                if (isLoading) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  );
+                }
 
                 return IconButton(
                   icon: Icon(
@@ -62,6 +79,8 @@ class MusicPlayerPage extends StatelessWidget {
                   onPressed: () {
                     if (playData?.id != null) {
                       favController.toggleFavorite(playData!.id!);
+                    } else if (songId.isNotEmpty) {
+                      favController.toggleFavorite(songId);
                     }
                   },
                 );

@@ -19,6 +19,7 @@ class SongListController extends GetxController {
   final RxInt _index = 0.obs;
   RxInt get index => _index;
   var favoriteMap = <String, bool>{}.obs;
+  var favoriteLoadingMap = <String, bool>{}.obs;
 
   void toggle(int index) {
     _index.value = index;
@@ -178,6 +179,7 @@ class SongListController extends GetxController {
 
   void toggleFavorite(String songid) async {
     try {
+      favoriteLoadingMap[songid] = true;
       final isFav = favoriteMap[songid] ?? false;
       if (isFav) {
         final res = await _repo.deleteFavoriteSong(songid);
@@ -202,6 +204,8 @@ class SongListController extends GetxController {
       }
     } catch (e) {
       print("Error toggling favorite: $e");
+    } finally {
+      favoriteLoadingMap[songid] = false;
     }
   }
 

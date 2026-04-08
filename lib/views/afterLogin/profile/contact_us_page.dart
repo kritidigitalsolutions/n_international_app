@@ -106,21 +106,21 @@ class ContactUsPage extends StatelessWidget {
                           },
                         ),
                         const SizedBox(height: 16),
-                        _buildContactCard(
-                          icon: Icons.location_on_outlined,
-                          title: "Visit Us",
-                          subtitle: data.address ?? "",
-                          onTap: () {
-                            if (data.address != null &&
-                                data.address!.isNotEmpty) {
-                              final query =
-                              Uri.encodeComponent(data.address!);
-                              _launchUrl(
-                                  "https://www.google.com/maps/search/?api=1&query=$query");
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 40),
+                        // _buildContactCard(
+                        //   icon: Icons.location_on_outlined,
+                        //   title: "Visit Us",
+                        //   subtitle: data.address ?? "",
+                        //   onTap: () {
+                        //     if (data.address != null &&
+                        //         data.address!.isNotEmpty) {
+                        //       final query =
+                        //       Uri.encodeComponent(data.address!);
+                        //       _launchUrl(
+                        //           "https://www.google.com/maps/search/?api=1&query=$query");
+                        //     }
+                        //   },
+                        // ),
+                        // const SizedBox(height: 40),
                         Text(
                           "Our Socials",
                           style: text18(

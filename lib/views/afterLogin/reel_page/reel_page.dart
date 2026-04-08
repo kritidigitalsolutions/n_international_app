@@ -23,6 +23,14 @@ class _ReelPageState extends State<ReelPage> with RouteAware {
     _pageController.dispose();
     super.dispose();
   }
+  void didPushNext() {
+    controller.pauseAll(); // jab next page push ho
+  }
+
+  @override
+  void didPopNext() {
+    controller.resumeCurrent(); // jab wapas aaye
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +110,7 @@ class _ReelItemState extends State<ReelItem> {
     return GestureDetector(
       onHorizontalDragEnd: (details) {
         if (details.primaryVelocity! > 0) {
+          controller.pauseAll(); // ADD THIS
           Get.toNamed(AppRoutes.seriesDetails, arguments: widget.series);
         }
       },
@@ -187,7 +196,10 @@ class _ReelItemState extends State<ReelItem> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
-                  onTap: () => Get.toNamed(AppRoutes.seriesDetails, arguments: widget.series),
+                  onTap: () {
+                    controller.pauseAll();
+                    Get.toNamed(AppRoutes.seriesDetails, arguments: widget.series);
+                  },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
