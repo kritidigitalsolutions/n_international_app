@@ -15,45 +15,40 @@ class RechargeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         leading: iconButton(
           icon: Icons.arrow_back_ios_outlined,
-          onPressed: () {
-            Get.back();
-          },
+          onPressed: () => Get.back(),
         ),
         title: Text(
           'Recharge Wallet',
           style: text18(fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
       ),
       body: Stack(
         children: [
           backgroundGradient(),
           SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+            padding: const EdgeInsets.all(15),
             child: SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Add Money to Wallet',
-                        style: text20(fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
+                  Text('Add Money to Wallet', style: text20(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 10),
+
                   Text(
                     '1 Rupee = 1 Episode',
                     style: text14(color: AppColors.primary, fontWeight: FontWeight.bold),
                   ),
+
                   const SizedBox(height: 25),
 
-                  // Input Field
-                  TextField(
+                  // 🔥 INPUT FIELD WITH BORDER
+                  Obx(() => TextField(
                     controller: controller.amountController,
+                    focusNode: controller.amountFocus,
                     keyboardType: TextInputType.number,
                     style: text18(fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
@@ -61,37 +56,51 @@ class RechargeScreen extends StatelessWidget {
                       hintText: 'Enter Amount',
                       filled: true,
                       fillColor: AppColors.surface.withAlpha(30),
-                      border: OutlineInputBorder(
+
+                      enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
+                        borderSide: BorderSide(
+                          color: controller.isFocused.value ||
+                              controller.amountController.text.isNotEmpty
+                              ? AppColors.primary
+                              : AppColors.error,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary,
+                          width: 2,
+                        ),
                       ),
                     ),
                     onChanged: (value) {
                       controller.selectedAmount.value = int.tryParse(value) ?? 0;
                     },
-                  ),
+                  )),
+
                   const SizedBox(height: 20),
 
-                  // Multiples of 50
-                  Text(
-                    'Quick Select',
-                    style: text16(fontWeight: FontWeight.w600),
-                  ),
+                  Text('Quick Select', style: text16(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 12),
+
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
+                    itemCount: controller.quickAmounts.length,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       childAspectRatio: 2.2,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                     ),
-                    itemCount: controller.quickAmounts.length,
                     itemBuilder: (context, index) {
                       int amount = controller.quickAmounts[index];
+
                       return Obx(() {
                         bool isSelected = controller.selectedAmount.value == amount;
+
                         return InkWell(
                           onTap: () => controller.selectAmount(amount),
                           child: Container(
@@ -100,7 +109,9 @@ class RechargeScreen extends StatelessWidget {
                               color: isSelected ? AppColors.primary : AppColors.surface.withAlpha(30),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: isSelected ? AppColors.primary : AppColors.textSecondary.withAlpha(50),
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary.withAlpha(50),
                               ),
                             ),
                             child: Text(
@@ -118,7 +129,6 @@ class RechargeScreen extends StatelessWidget {
 
                   const SizedBox(height: 40),
 
-                  // Summary Info
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: decorationBox(15),
@@ -145,9 +155,7 @@ class RechargeScreen extends StatelessWidget {
                   Obx(() => CustomButton(
                     title: "Continue to Pay",
                     isLoading: controller.isLoading.value,
-                    onPressed: () {
-                      controller.startRecharge();
-                    },
+                    onPressed: () => controller.startRecharge(),
                     textColor: AppColors.textPrimary,
                   )),
                 ],

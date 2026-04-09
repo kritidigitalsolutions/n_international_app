@@ -9,6 +9,7 @@ import 'package:n_square_international/utils/hive_service/userdetail.dart';
 
 import '../../model/request/auth_request_model/auth_req_model.dart';
 import '../../repo/auth_repo.dart';
+import '../../viewModel/afterLogin/home_controller.dart';
 
 class EnterFullNamePage extends StatefulWidget {
   const EnterFullNamePage({super.key});
@@ -20,6 +21,7 @@ class EnterFullNamePage extends StatefulWidget {
 class _EnterFullNamePageState extends State<EnterFullNamePage> {
   final TextEditingController nameController = TextEditingController();
   final phone = Get.arguments as String;
+  final RxBool isLoading = false.obs;
 
   void submitName(String phone) async {
     final phone = Get.arguments as String?;
@@ -33,7 +35,6 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
       return;
     }
 
-    // Check if user entered a name
     if (nameController.text.trim().isEmpty) {
       Get.snackbar(
         "Error",
@@ -43,20 +44,19 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
       return;
     }
 
+    isLoading.value = true;
+
     try {
-      // Create request model
       final model = UserDetailsReqModel(
         name: nameController.text.trim(),
-        phone: phone, // phone from OTP page
-        email: "",    // blank email
-        image: "",    // blank image
+        phone: phone,
+        email: "",
+        image: "",
       );
 
-      // Call register API
       final response = await AuthRepo().registerUser(model);
-      
+
       if (response.user != null) {
-        // Update Hive with the registered user data
         final existingUser = HiveService.getUser();
         final updatedUser = UserDetails(
           name: response.user?.name ?? nameController.text.trim(),
@@ -65,12 +65,23 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
           email: existingUser?.email ?? "",
           image: existingUser?.image ?? "",
         );
+
         await HiveService.saveUser(updatedUser);
+
+        // ✅ Success Snackbar
+        Get.snackbar(
+          "Success",
+          "Your account created successfully!",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+
+        await Future.delayed(const Duration(seconds: 1));
+
+        Get.offAllNamed(AppRoutes.myHome);
+        Future.delayed(const Duration(milliseconds: 300), () {
+          Get.find<HomeController>().showLoginSnackbar();
+        });
       }
-
-      // Navigate to home page after successful registration
-      Get.offAllNamed(AppRoutes.myHome);
-
     } catch (e) {
       Get.snackbar(
         "Error",
@@ -78,8 +89,12 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
         snackPosition: SnackPosition.BOTTOM,
       );
       print("Registration error: $e");
+    } finally {
+      isLoading.value = false;
     }
   }
+
+
 
 
   @override
@@ -132,9 +147,21 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
             ),
             const SizedBox(height: 40),
 
-            CustomButton(title: "Continue", onPressed: () {
-              submitName(phone);
-            }),
+            Obx(() => CustomButton(
+              title: isLoading.value ? "" : "Continue",
+              onPressed: isLoading.value ? null : () => submitName(phone),
+              child: isLoading.value
+                  ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.white,
+                ),
+              )
+                  : null,
+            )),
+
           ],
         ),
       ),

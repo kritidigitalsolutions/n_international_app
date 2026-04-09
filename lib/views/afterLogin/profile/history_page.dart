@@ -68,6 +68,7 @@ class HistoryScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         leading: iconButton(
           icon: Icons.arrow_back_ios_outlined,
           onPressed: () => Get.back(),

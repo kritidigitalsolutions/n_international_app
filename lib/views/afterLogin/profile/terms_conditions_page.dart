@@ -19,6 +19,7 @@ class TermsConditionsPage extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         leading: iconButton(
           icon: Icons.arrow_back_ios_outlined,
           onPressed: () {
@@ -29,6 +30,7 @@ class TermsConditionsPage extends StatelessWidget {
           'Terms & Conditions',
           style: text18(fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
       ),
       body: Stack(
         children: [

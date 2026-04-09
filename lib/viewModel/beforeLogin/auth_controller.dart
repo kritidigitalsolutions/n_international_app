@@ -7,6 +7,7 @@ import 'package:n_square_international/utils/custom_snakebar.dart';
 import '../../repo/auth_repo.dart';
 import '../../utils/hive_service/hive_service.dart';
 import '../../utils/hive_service/userdetail.dart';
+import '../afterLogin/home_controller.dart';
 
 class LoginController extends GetxController {
   final TextEditingController ctr = TextEditingController();
@@ -65,65 +66,65 @@ class LoginController extends GetxController {
     }
   }
 
-  Future<void> signInWithGoogle() async {
-    try {
-      isLoading.value = true;
-      
-      // Explicitly trigger sign out to ensure account picker appears
-      await _googleSignIn.signOut();
-      
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        isLoading.value = false;
-        return; // User cancelled
-      }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      final User? user = userCredential.user;
-
-      if (user != null) {
-        final userDetails = UserDetails(
-          name: user.displayName ?? "",
-          token: await user.getIdToken() ?? "",
-          phone: user.phoneNumber ?? "",
-          email: user.email ?? "",
-        );
-
-        await HiveService.saveUser(userDetails);
-        
-        CustomSnackbar.showSuccess(
-          title: "Success",
-          message: "Logged in as ${user.displayName}",
-        );
-        
-        Get.offAllNamed(AppRoutes.myHome);
-      }
-    } catch (e) {
-      print("Detailed Google Sign-In Error: $e");
-      String errorMessage = "Google Sign-In failed.";
-      
-      if (e.toString().contains("10")) {
-        errorMessage = "Error 10: SHA-1 fingerprint mismatch. Check Firebase Console.";
-      } else if (e.toString().contains("12500")) {
-        errorMessage = "Error 12500: Sign-in failed. Check your internet or Google Play Services.";
-      } else if (e.toString().contains("7")) {
-        errorMessage = "Error 7: Network error. Please check your connection.";
-      }
-      
-      CustomSnackbar.showError(
-        title: "Sign-In Error",
-        message: errorMessage,
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
+  // Future<void> signInWithGoogle() async {
+  //   try {
+  //     isLoading.value = true;
+  //
+  //     // Explicitly trigger sign out to ensure account picker appears
+  //     await _googleSignIn.signOut();
+  //
+  //     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+  //     if (googleUser == null) {
+  //       isLoading.value = false;
+  //       return; // User cancelled
+  //     }
+  //
+  //     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+  //     final AuthCredential credential = GoogleAuthProvider.credential(
+  //       accessToken: googleAuth.accessToken,
+  //       idToken: googleAuth.idToken,
+  //     );
+  //
+  //     final UserCredential userCredential = await _auth.signInWithCredential(credential);
+  //     final User? user = userCredential.user;
+  //
+  //     if (user != null) {
+  //       final userDetails = UserDetails(
+  //         name: user.displayName ?? "",
+  //         token: await user.getIdToken() ?? "",
+  //         phone: user.phoneNumber ?? "",
+  //         email: user.email ?? "",
+  //       );
+  //
+  //       await HiveService.saveUser(userDetails);
+  //
+  //       CustomSnackbar.showSuccess(
+  //         title: "Success",
+  //         message: "Logged in as ${user.displayName}",
+  //       );
+  //
+  //       Get.offAllNamed(AppRoutes.myHome);
+  //     }
+  //   } catch (e) {
+  //     print("Detailed Google Sign-In Error: $e");
+  //     String errorMessage = "Google Sign-In failed.";
+  //
+  //     if (e.toString().contains("10")) {
+  //       errorMessage = "Error 10: SHA-1 fingerprint mismatch. Check Firebase Console.";
+  //     } else if (e.toString().contains("12500")) {
+  //       errorMessage = "Error 12500: Sign-in failed. Check your internet or Google Play Services.";
+  //     } else if (e.toString().contains("7")) {
+  //       errorMessage = "Error 7: Network error. Please check your connection.";
+  //     }
+  //
+  //     CustomSnackbar.showError(
+  //       title: "Sign-In Error",
+  //       message: errorMessage,
+  //     );
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
 }
 
 /// otp controller
@@ -190,18 +191,13 @@ class OtpController extends GetxController {
       final res = await _repo.verfiyOtp(phone, otp);
       final isNewUser = res["isNewUser"] ?? false;
 
-      CustomSnackbar.showSuccess(
-        title: "Success",
-        message: "OTP Verified Successfully",
-      );
-
-      // Save user to Hive
       final userJson = res["user"] ?? {
         "name": "",
         "dob": "",
         "gender": "",
         "phone": phone,
       };
+
       final token = res["token"] ?? "";
 
       final user = UserDetails(
@@ -213,7 +209,14 @@ class OtpController extends GetxController {
 
       await HiveService.saveUser(user);
 
-      // Navigate based on isNewUser
+      // ✅ NOW show snackbar (after user created)
+      final userName = user.name.isNotEmpty ? user.name : "User";
+
+      CustomSnackbar.showSuccess(
+        title: "Success",
+        message: "Welcome back $userName, you are logged in successfully",
+      );
+
       if (isNewUser) {
         Get.offAllNamed(
           AppRoutes.fullName,
@@ -221,6 +224,9 @@ class OtpController extends GetxController {
         );
       } else {
         Get.offAllNamed(AppRoutes.myHome);
+        Future.delayed(const Duration(milliseconds: 300), () {
+          Get.find<HomeController>().showLoginSnackbar();
+        });
       }
 
     } catch (e) {
@@ -232,6 +238,7 @@ class OtpController extends GetxController {
       isLoading.value = false;
     }
   }
+
   Future<void> resendOtp() async {
     try {
       isLoading.value = true;

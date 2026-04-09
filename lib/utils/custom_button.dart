@@ -4,12 +4,13 @@ import 'package:n_square_international/utils/textStyle.dart';
 
 class CustomButton extends StatelessWidget {
   final String title;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final double height;
   final double borderRadius;
   final Color? color;
   final Color textColor;
+  final Widget? child;
 
   const CustomButton({
     super.key,
@@ -20,6 +21,7 @@ class CustomButton extends StatelessWidget {
     this.borderRadius = 20,
     this.textColor = AppColors.textPrimary,
     this.color,
+    this.child,
   });
 
   @override

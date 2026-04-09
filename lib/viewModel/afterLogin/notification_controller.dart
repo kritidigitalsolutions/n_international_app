@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/model/responce/notification_response.dart';
 import 'package:n_square_international/repo/notification_repo.dart';
@@ -93,4 +94,28 @@ class NotificationController extends GetxController {
       }
     }
   }
+
+  void addFromFCM(RemoteMessage message) {
+    final id = message.data['_id'];
+
+    // ❌ duplicate avoid
+    bool exists = notifications.any((n) => n.sId == id);
+    if (exists) return;
+
+    final newNotification = NotificationItem(
+      sId: id,
+      title: message.notification?.title ?? message.data['title'],
+      message: message.notification?.body ?? message.data['message'],
+      createdAt: DateTime.now().toIso8601String(),
+      isRead: false,
+    );
+
+    // 🔥 top pe add
+    notifications.insert(0, newNotification);
+
+    unreadCount.value++;
+
+    notifications.refresh();
+  }
+
 }

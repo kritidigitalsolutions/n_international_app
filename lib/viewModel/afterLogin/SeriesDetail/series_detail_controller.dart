@@ -29,7 +29,6 @@ class SeriesDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Start loading local data immediately
     _loadUnlockedEpisodes();
   }
 
@@ -37,7 +36,7 @@ class SeriesDetailController extends GetxController {
     try {
       final prefs = await SharedPreferences.getInstance();
       final list = prefs.getStringList("unlocked_episodes") ?? [];
-      locallyUnlockedIds.addAll(list);
+      locallyUnlockedIds.assignAll(list);
     } catch (e) {
       print("Error loading unlocked episodes: $e");
     }
@@ -57,29 +56,22 @@ class SeriesDetailController extends GetxController {
 
   void fetchEpisodes(String seriesId) async {
     isInitialLoading.value = true;
-
     try {
       await _loadUnlockedEpisodes();
-
       final response = await _repo.fetchEpisodes(seriesId);
 
       if (response.episodes != null) {
         for (var episode in response.episodes!) {
-
-          /// ✅ ONLY per episode check
           if (episode.id != null &&
               (locallyUnlockedIds.contains(episode.id) ||
                   episode.alreadyUnlocked == true)) {
-
             episode.alreadyUnlocked = true;
           } else {
             episode.alreadyUnlocked = false;
           }
         }
       }
-
       episodesResponse.value = ApiResponse.completed(response);
-
     } catch (e) {
       episodesResponse.value = ApiResponse.error(e.toString());
     } finally {
@@ -87,33 +79,61 @@ class SeriesDetailController extends GetxController {
     }
   }
 
-  // Future<void> _checkAllEpisodesUnlockStatus(List<Episode> episodes) async {
-  //   for (var episode in episodes) {
-  //     // If already marked as unlocked, skip network check
-  //     if (episode.id == null ||
-  //         episode.isLocked == false ||
-  //         episode.alreadyUnlocked == true ||
-  //         locallyUnlockedIds.contains(episode.id)) {
-  //
-  //       // Sync local cache if server says it's unlocked but we don't have it
-  //       if ((episode.isLocked == false || episode.alreadyUnlocked == true) && episode.id != null) {
-  //         _saveUnlockedEpisode(episode.id!);
-  //       }
-  //       continue;
-  //     }
-  //
-  //     // Check server for current status
-  //     _repo.playEpisode(episode.id!).then((playData) {
-  //       if (playData.alreadyUnlocked == true) {
-  //         episode.alreadyUnlocked = true;
-  //         _saveUnlockedEpisode(episode.id!);
-  //         episodesResponse.refresh(); // Trigger UI update
-  //       }
-  //     }).catchError((e) {
-  //       // Silent error for background check
-  //     });
-  //   }
-  // }
+  Future<void> unlockEpisode(String seriesId, String episodeId) async {
+    final profileController = Get.find<FullProfileController>();
+
+    if (profileController.walletBalance.value < 1) {
+      CustomSnackbar.showError(title: "Insufficient Balance", message: "You need at least 1 rupee to unlock this episode.");
+      return;
+    }
+
+    isUnlocking.value = true;
+    try {
+      final response = await _repo.unlockEpisode(episodeId);
+      if (response['success'] == true) {
+        CustomSnackbar.showSuccess(title: "Success", message: "Episode unlocked successfully!");
+
+        // Update wallet balance immediately from response using safer parsing
+        dynamic newBalanceRaw;
+        if (response['unlock'] != null && response['unlock']['walletBalance'] != null) {
+          newBalanceRaw = response['unlock']['walletBalance'];
+        } else if (response['walletBalance'] != null) {
+          newBalanceRaw = response['walletBalance'];
+        }
+
+        if (newBalanceRaw != null) {
+          // Use num.parse().toInt() to handle doubles like 9.0
+          profileController.walletBalance.value = num.parse(newBalanceRaw.toString()).toInt();
+        }
+        
+        // 🔥 Refresh profile to ensure total sync
+        await profileController.fetchUserProfile();
+
+        // Persist unlock status locally
+        await _saveUnlockedEpisode(episodeId);
+
+        // Update local episode list state
+        if (episodesResponse.value.data != null && episodesResponse.value.data!.episodes != null) {
+          final episodeIndex = episodesResponse.value.data!.episodes!.indexWhere((e) => e.id == episodeId);
+          if (episodeIndex != -1) {
+            episodesResponse.value.data!.episodes![episodeIndex].alreadyUnlocked = true;
+            episodesResponse.refresh();
+          }
+        }
+        
+        // Re-fetch to ensure server state is in sync
+        fetchEpisodes(seriesId);
+
+      } else {
+        CustomSnackbar.showError(title: "Error", message: response['message'] ?? "Failed to unlock episode");
+      }
+    } catch (e) {
+      print("Unlock Error: $e");
+      CustomSnackbar.showError(title: "Error", message: "An error occurred during unlock.");
+    } finally {
+      isUnlocking.value = false;
+    }
+  }
 
   void checkIsFavorite(String seriesId) async {
     try {
@@ -129,7 +149,6 @@ class SeriesDetailController extends GetxController {
   void toggleFavorite(String seriesId) async {
     try {
       isFavoriteLoading.value = true;
-
       if (isFavorite.value) {
         final res = await _repo.deleteFavorite(seriesId);
         if (res['success'] == true) {
@@ -153,71 +172,6 @@ class SeriesDetailController extends GetxController {
       print("Error toggling favorite: $e");
     } finally {
       isFavoriteLoading.value = false;
-    }
-  }
-
-
-  Future<void> playEpisode(String episodeId) async {
-    playEpisodeResponse.value = ApiResponse.loading();
-    try {
-      final data = await _repo.playEpisode(episodeId);
-      playEpisodeResponse.value = ApiResponse.completed(data);
-      Get.toNamed(AppRoutes.videoPlay, arguments: data);
-    } catch (e) {
-      playEpisodeResponse.value = ApiResponse.error(e.toString());
-    }
-  }
-
-  Future<void> unlockEpisode(String seriesId, String episodeId) async {
-    final profileController = Get.find<FullProfileController>();
-
-    if (profileController.walletBalance.value < 1) {
-      CustomSnackbar.showError(title: "Insufficient Balance", message: "You need at least 1 rupee to unlock this episode.");
-      return;
-    }
-
-    isUnlocking.value = true;
-    try {
-      final response = await _repo.unlockEpisode(episodeId);
-      if (response['success'] == true) {
-        CustomSnackbar.showSuccess(title: "Success", message: "Episode unlocked successfully!");
-
-        // Update wallet balance
-        var newBalance = 0;
-        if (response['unlock'] != null && response['unlock']['walletBalance'] != null) {
-          newBalance = response['unlock']['walletBalance'];
-        } else if (response['walletBalance'] != null) {
-          newBalance = response['walletBalance'];
-        }
-
-        if (newBalance > 0) {
-          profileController.walletBalance.value = newBalance;
-        } else {
-          profileController.fetchUserProfile();
-        }
-
-        // Persist unlock status
-        await _saveUnlockedEpisode(episodeId);
-
-        // Update local state immediately
-        if (episodesResponse.value.data != null && episodesResponse.value.data!.episodes != null) {
-          final episodeIndex = episodesResponse.value.data!.episodes!.indexWhere((e) => e.id == episodeId);
-          if (episodeIndex != -1) {
-            episodesResponse.value.data!.episodes![episodeIndex].alreadyUnlocked = true;
-            episodesResponse.refresh();
-          }
-        }
-
-        // Refresh series data
-        fetchEpisodes(seriesId);
-
-      } else {
-        CustomSnackbar.showError(title: "Error", message: response['message'] ?? "Failed to unlock episode");
-      }
-    } catch (e) {
-      CustomSnackbar.showError(title: "Error", message: e.toString());
-    } finally {
-      isUnlocking.value = false;
     }
   }
 

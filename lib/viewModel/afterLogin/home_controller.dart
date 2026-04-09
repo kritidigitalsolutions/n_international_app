@@ -129,13 +129,8 @@ class HomeController extends GetxController {
   }
 
   /// Snackbar
-  Future<void> checkFirstTimeSnackbar() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isFirstVisit = prefs.getBool('is_first_home_visit') ?? true;
-
-    if (!isFirstVisit) return;
-
-    Future.delayed(const Duration(milliseconds: 400), () {
+  void showLoginSnackbar() {
+    Future.delayed(const Duration(milliseconds: 300), () {
       Get.showSnackbar(
         GetSnackBar(
           snackPosition: SnackPosition.TOP,
@@ -144,16 +139,10 @@ class HomeController extends GetxController {
               AppColors.accentRed.withAlpha(150),
               AppColors.buttonColor.withAlpha(80),
             ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
           ),
           margin: const EdgeInsets.fromLTRB(12, 40, 12, 0),
           borderRadius: 16,
-          duration: const Duration(seconds: 8),
-          isDismissible: true,
-          forwardAnimationCurve: Curves.easeOutBack,
-          reverseAnimationCurve: Curves.easeIn,
-          barBlur: 4,
+          duration: const Duration(seconds: 5),
           snackStyle: SnackStyle.FLOATING,
           icon: const Icon(
             Icons.account_balance_wallet_rounded,
@@ -168,28 +157,12 @@ class HomeController extends GetxController {
             ),
           ),
           messageText: Text(
-            "Added to you Wallet",
+            "Added to your Wallet",
             style: text14(color: AppColors.textSecondary),
           ),
-          mainButton: GestureDetector(
-            onTap: () => Get.back(),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "×",
-                style: text24(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w300,
-                ),
-              ),
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       );
     });
-
-    await prefs.setBool('is_first_home_visit', false);
   }
 
   @override

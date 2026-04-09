@@ -188,7 +188,7 @@ class ProfilePage extends StatelessWidget {
                 ),
                 _buildMenuItem(
                   icon: Icons.history,
-                  title: 'History',
+                  title: 'Watch History',
                   onTap: () {
                     Get.toNamed(AppRoutes.history);
                   },

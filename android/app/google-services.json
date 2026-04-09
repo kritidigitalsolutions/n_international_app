@@ -1,36 +1,27 @@
 {
   "project_info": {
-    "project_number": "635446432744",
-    "project_id": "n2shorts",
-    "storage_bucket": "n2shorts.firebasestorage.app"
+    "project_number": "1065959179509",
+    "firebase_url": "https://iot-lab-webapp-default-rtdb.firebaseio.com",
+    "project_id": "iot-lab-webapp",
+    "storage_bucket": "iot-lab-webapp.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:635446432744:android:0c809a3383c0191c96ca5d",
+        "mobilesdk_app_id": "1:1065959179509:android:11fef054e8f84082dc71bc",
         "android_client_info": {
           "package_name": "com.nsquareinternational.app"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "635446432744-nsc75td7glun7ocqg63m3bri9hg3g84h.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBfveC2C5ReUrDOYnnMMbX2kho_QpzYuwo"
+          "current_key": "AIzaSyCzmdIZ0-UyDrJm8xXBeBgtJBSlEHXYGps"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "635446432744-nsc75td7glun7ocqg63m3bri9hg3g84h.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

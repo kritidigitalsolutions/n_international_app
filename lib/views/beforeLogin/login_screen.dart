@@ -186,7 +186,7 @@ class LoginPage extends StatelessWidget {
                                     width: 20,
                                     child:
                                     CircularProgressIndicator(
-                                      color: Colors.white,
+                                      color: AppColors.white,
                                       strokeWidth: 2,
                                     ),
                                   )

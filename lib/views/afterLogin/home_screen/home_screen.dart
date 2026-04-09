@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    ctr.checkFirstTimeSnackbar();
+    // ctr.showLoginSnackbar();
   }
 
   String _formatTime(String? dateStr) {
