@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:n_square_international/routes/app_routes.dart';
 import 'package:n_square_international/utils/custom_snakebar.dart';
+import '../../data/network/notification_service.dart';
 import '../../repo/auth_repo.dart';
 import '../../utils/hive_service/hive_service.dart';
 import '../../utils/hive_service/userdetail.dart';
@@ -40,7 +41,6 @@ class LoginController extends GetxController {
     try {
       final response = await _repo.sendOtp(ctr.text.trim());
 
-      // Check if debug OTP is present in response
       String successMessage = "Otp send successfully";
       if (response != null && response['debug'] != null) {
         successMessage = "OTP sent Successfully";
@@ -65,66 +65,6 @@ class LoginController extends GetxController {
       isLoading.value = false;
     }
   }
-
-  // Future<void> signInWithGoogle() async {
-  //   try {
-  //     isLoading.value = true;
-  //
-  //     // Explicitly trigger sign out to ensure account picker appears
-  //     await _googleSignIn.signOut();
-  //
-  //     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-  //     if (googleUser == null) {
-  //       isLoading.value = false;
-  //       return; // User cancelled
-  //     }
-  //
-  //     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-  //     final AuthCredential credential = GoogleAuthProvider.credential(
-  //       accessToken: googleAuth.accessToken,
-  //       idToken: googleAuth.idToken,
-  //     );
-  //
-  //     final UserCredential userCredential = await _auth.signInWithCredential(credential);
-  //     final User? user = userCredential.user;
-  //
-  //     if (user != null) {
-  //       final userDetails = UserDetails(
-  //         name: user.displayName ?? "",
-  //         token: await user.getIdToken() ?? "",
-  //         phone: user.phoneNumber ?? "",
-  //         email: user.email ?? "",
-  //       );
-  //
-  //       await HiveService.saveUser(userDetails);
-  //
-  //       CustomSnackbar.showSuccess(
-  //         title: "Success",
-  //         message: "Logged in as ${user.displayName}",
-  //       );
-  //
-  //       Get.offAllNamed(AppRoutes.myHome);
-  //     }
-  //   } catch (e) {
-  //     print("Detailed Google Sign-In Error: $e");
-  //     String errorMessage = "Google Sign-In failed.";
-  //
-  //     if (e.toString().contains("10")) {
-  //       errorMessage = "Error 10: SHA-1 fingerprint mismatch. Check Firebase Console.";
-  //     } else if (e.toString().contains("12500")) {
-  //       errorMessage = "Error 12500: Sign-in failed. Check your internet or Google Play Services.";
-  //     } else if (e.toString().contains("7")) {
-  //       errorMessage = "Error 7: Network error. Please check your connection.";
-  //     }
-  //
-  //     CustomSnackbar.showError(
-  //       title: "Sign-In Error",
-  //       message: errorMessage,
-  //     );
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
 }
 
 /// otp controller
@@ -144,7 +84,7 @@ class OtpController extends GetxController {
     phone = Get.arguments;
     super.onInit();
   }
-  // OTP input change
+  
   void onOtpChanged(String value, int index) {
     if (value.isNotEmpty && index < 5) {
       focusNodes[index + 1].requestFocus();
@@ -152,12 +92,11 @@ class OtpController extends GetxController {
     if (value.isEmpty && index > 0) {
       focusNodes[index - 1].requestFocus();
     }
-    // auto submit when last digit entered
     if (index == 5 && value.isNotEmpty) {
       submitOtp();
     }
   }
-  // Handle backspace
+  
   void handleBackspace(int index) {
     if (otpControllers[index].text.isNotEmpty) {
       otpControllers[index].clear();
@@ -167,7 +106,6 @@ class OtpController extends GetxController {
     }
   }
 
-  // Submit OTP
   void submitOtp() {
     String otp = otpControllers.map((e) => e.text).join();
     if (otp.length < 6) {
@@ -180,10 +118,6 @@ class OtpController extends GetxController {
 
     verifyOtp(phone, otp);
   }
-
-  // --------------------------------
-  // API Call verify otp
-  // --------------------------------
 
   Future<void> verifyOtp(String phone, String otp) async {
     isLoading.value = true;
@@ -209,7 +143,9 @@ class OtpController extends GetxController {
 
       await HiveService.saveUser(user);
 
-      // ✅ NOW show snackbar (after user created)
+      // 🔥 SYNC FCM TOKEN TO BACKEND IMMEDIATELY AFTER LOGIN
+      await NotificationService.syncTokenToServer();
+
       final userName = user.name.isNotEmpty ? user.name : "User";
 
       CustomSnackbar.showSuccess(
@@ -242,20 +178,11 @@ class OtpController extends GetxController {
   Future<void> resendOtp() async {
     try {
       isLoading.value = true;
-
       final response = await _repo.sendOtp(phone);
 
-      /// Optional debug OTP
-      if (response != null && response['debug'] != null) {
-        print("RESEND DEBUG OTP => ${response['debug']}");
-      }
-
-      /// Clear old OTP fields
       for (var c in otpControllers) {
         c.clear();
       }
-
-      /// Focus first field again
       focusNodes[0].requestFocus();
 
       CustomSnackbar.showSuccess(
@@ -263,8 +190,6 @@ class OtpController extends GetxController {
         message: "OTP resent successfully",
       );
     } catch (e) {
-      print("Resend Error => $e");
-
       CustomSnackbar.showError(
         title: "Error",
         message: "Failed to resend OTP",
@@ -273,8 +198,6 @@ class OtpController extends GetxController {
       isLoading.value = false;
     }
   }
-
-
 
   @override
   void onClose() {

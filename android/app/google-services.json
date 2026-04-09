@@ -8,9 +8,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1065959179509:android:11fef054e8f84082dc71bc",
+        "mobilesdk_app_id": "1:1065959179509:android:df383600ab761034dc71bc",
         "android_client_info": {
-          "package_name": "com.nsquareinternational.app"
+          "package_name": "com.nsqureshorts.app"
         }
       },
       "oauth_client": [],

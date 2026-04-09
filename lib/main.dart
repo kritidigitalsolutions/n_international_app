@@ -12,12 +12,16 @@ import 'package:n_square_international/utils/bottom_navigationbar.dart';
 import 'package:n_square_international/utils/hive_service/userdetail.dart';
 import 'package:n_square_international/utils/hive_service/userdetail.g.dart';
 import 'package:n_square_international/viewModel/afterLogin/bottom_nac_controller.dart';
-
 import 'data/network/notification_service.dart';
 
-// 🔥 REQUIRED
+// 🔥 BACKGROUND HANDLER
 @pragma('vm:entry-point')
 Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
+  print("🌙 BACKGROUND HANDLER TRIGGERED");
+  print("📩 BG Title: ${message.notification?.title}");
+  print("📩 BG Body: ${message.notification?.body}");
+  print("📦 BG Data: ${message.data}");
+
   await NotificationService.backgroundHandler(message);
 }
 
@@ -27,33 +31,74 @@ RouteObserver<ModalRoute<void>>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  print("🚀 APP STARTED");
+
+  // 🔥 Firebase Init
   await Firebase.initializeApp();
+  print("🔥 Firebase Initialized");
 
-  // ✅ BACKGROUND HANDLER
+  // 🔔 Background Notification Setup
   FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
+  print("🌙 Background handler registered");
 
-  // ✅ INIT NOTIFICATION
-  await NotificationService.init();
+  // 📱 Token Debug
+  String? token = await FirebaseMessaging.instance.getToken();
+  print("🔥 FCM TOKEN (MAIN): $token");
 
-  // Hive init
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    print("🔄 FCM TOKEN REFRESHED (MAIN): $newToken");
+  });
+
+  // 📦 Hive Init
   await Hive.initFlutter();
   if (!Hive.isAdapterRegistered(UserDetailsAdapter().typeId)) {
     Hive.registerAdapter(UserDetailsAdapter());
   }
   await Hive.openBox<UserDetails>('userBox');
+  print("📦 Hive Initialized");
 
-  // Screenshot block
+  // 🚫 Screenshot Block
   final NoScreenshot noScreenshot = NoScreenshot.instance;
   await noScreenshot.screenshotOff();
+  print("🚫 Screenshot Disabled");
+
+  // ❌ REMOVE THIS (IMPORTANT)
+  // await NotificationService.init();
 
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+////////////////////////////////////////////////////////////
+/// ✅ FIXED HERE
+////////////////////////////////////////////////////////////
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 🔥 SAFE CALL AFTER UI READY
+    Future.delayed(const Duration(seconds: 1), () async {
+      print("🚀 Calling NotificationService.init AFTER UI");
+
+      await NotificationService.init();
+
+      print("🔔 NotificationService Initialized (SAFE)");
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    print("🎨 Building MyApp");
+
     return GetMaterialApp(
       title: "OTT App",
       debugShowCheckedModeBanner: false,
@@ -69,25 +114,36 @@ class MyApp extends StatelessWidget {
   }
 }
 
+////////////////////////////////////////////////////////////
+
 class MyHomePage extends StatelessWidget {
   MyHomePage({super.key});
+
   final BottomNavController controller = Get.put(BottomNavController());
 
   @override
   Widget build(BuildContext context) {
+    print("🏠 MyHomePage Loaded");
+
     return SafeArea(
       child: Scaffold(
         extendBody: true,
         body: Stack(
           children: [
             backgroundGradient(),
-            Obx(() => controller.pages[controller.currentIndex.value]),
+            Obx(() {
+              print("🔄 Page Changed Index: ${controller.currentIndex.value}");
+              return controller.pages[controller.currentIndex.value];
+            }),
           ],
         ),
         bottomNavigationBar: Obx(
               () => CustomBottomNavBar(
             currentIndex: controller.currentIndex.value,
-            onTap: controller.changeIndex,
+            onTap: (index) {
+              print("👉 Bottom Nav Clicked: $index");
+              controller.changeIndex(index);
+            },
           ),
         ),
       ),

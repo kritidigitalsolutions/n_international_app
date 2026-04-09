@@ -101,6 +101,7 @@ class _EnterFullNamePageState extends State<EnterFullNamePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text("Enter Full Name", style: text16()),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_outlined),

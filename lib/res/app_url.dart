@@ -1,9 +1,9 @@
 class AppUrls {
 
-  // static const String baseUrl = "http://192.168.1.40:9000/api";
-  // static const String baseImageUrl = "http://192.168.1.40:9000";
-  static const String baseUrl = "https://n-square-international.vercel.app/api";
-  static const String baseImageUrl = "https://n-square-international.vercel.app";
+  static const String baseUrl = "http://192.168.1.40:9000/api";
+  static const String baseImageUrl = "http://192.168.1.40:9000";
+  // static const String baseUrl = "https://n-square-international.vercel.app/api";
+  // static const String baseImageUrl = "https://n-square-international.vercel.app";
 
   //--------------------------------------------------
   //auth
@@ -84,6 +84,7 @@ class AppUrls {
   static const String notification = "$baseUrl/notifications";
   static String readNotification(String notificationId) => "$baseUrl/notifications/$notificationId/read";
   static const String readallnotification = "$baseUrl/notifications/read-all";
+  static const String updateFcmToken = "$baseUrl/notifications/fcm-token";
 
   //-----------------------------------------------------------
   // images
