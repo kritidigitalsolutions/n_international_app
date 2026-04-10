@@ -143,8 +143,8 @@ class OtpController extends GetxController {
 
       await HiveService.saveUser(user);
 
-      // 🔥 SYNC FCM TOKEN TO BACKEND IMMEDIATELY AFTER LOGIN
-      await NotificationService.syncTokenToServer();
+      // 🔥 REQUEST PERMISSION AND SYNC FCM TOKEN IMMEDIATELY AFTER LOGIN
+      await NotificationService.requestPermissionAndSync();
 
       final userName = user.name.isNotEmpty ? user.name : "User";
 

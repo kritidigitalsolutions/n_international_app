@@ -103,6 +103,26 @@ class NotificationService {
     print("✅ NotificationService INIT DONE");
   }
 
+  // 🔥 REQUEST PERMISSION AND SYNC TOKEN
+  static Future<void> requestPermissionAndSync() async {
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized || 
+        settings.authorizationStatus == AuthorizationStatus.provisional) {
+      print('User granted permission');
+      await syncTokenToServer();
+    } else {
+      print('User declined or has not accepted permission');
+    }
+  }
 
 
   // 🔥 PUBLIC METHOD TO SYNC TOKEN (Call this after login)
