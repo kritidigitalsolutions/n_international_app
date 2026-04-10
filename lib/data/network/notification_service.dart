@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:n_square_international/repo/notification_repo.dart';
+import 'package:n_square_international/utils/hive_service/hive_service.dart';
 import '../../viewModel/afterLogin/notification_controller.dart';
 
 class NotificationService {
@@ -24,7 +25,13 @@ class NotificationService {
       const InitializationSettings(android: android, iOS: ios),
     );
 
-    _showNotificationInternal(message);
+    // If message contains a notification, Android handles it automatically in background
+    // We only show local notification if it's a data-only message
+    if (message.notification == null) {
+      if (_shouldShowNotification(message)) {
+        _showNotificationInternal(message);
+      }
+    }
   }
 
   // 🔥 INIT
@@ -78,10 +85,12 @@ class NotificationService {
       print("📩 Body: ${message.notification?.body}");
       print("📦 Data: ${message.data}");
 
-      _showNotificationInternal(message);
+      if (_shouldShowNotification(message)) {
+        _showNotificationInternal(message);
 
-      if (Get.isRegistered<NotificationController>()) {
-        Get.find<NotificationController>().addFromFCM(message);
+        if (Get.isRegistered<NotificationController>()) {
+          Get.find<NotificationController>().addFromFCM(message);
+        }
       }
     });
 
@@ -101,6 +110,23 @@ class NotificationService {
     }
 
     print("✅ NotificationService INIT DONE");
+  }
+
+  static bool _shouldShowNotification(RemoteMessage message) {
+    final user = HiveService.getUser();
+    if (user != null && user.createdAt != null) {
+      final userCreatedTime = user.createdAt!;
+      
+      // Attempt to get timestamp from message sentTime
+      final messageTime = message.sentTime?.millisecondsSinceEpoch;
+      
+      if (messageTime != null) {
+        // Only show if message was sent after user was created
+        return messageTime > userCreatedTime;
+      }
+    }
+    // If we can't determine, default to showing (or adjust based on preference)
+    return true;
   }
 
   // 🔥 REQUEST PERMISSION AND SYNC TOKEN
@@ -140,12 +166,14 @@ class NotificationService {
 
   // 🔥 SHOW NOTIFICATION INTERNAL
   static Future<void> _showNotificationInternal(RemoteMessage message) async {
-    print("🔔 SHOWING LOCAL NOTIFICATION"); // 👈 ADD THIS
+    print("🔔 SHOWING LOCAL NOTIFICATION");
 
     RemoteNotification? notification = message.notification;
 
     String title = notification?.title ?? message.data['title'] ?? "N International";
     String body = notification?.body ?? message.data['message'] ?? message.data['body'] ?? "";
+
+    if (title.isEmpty && body.isEmpty) return; // Don't show empty notifications
 
     const androidDetails = AndroidNotificationDetails(
       'high_importance_channel',

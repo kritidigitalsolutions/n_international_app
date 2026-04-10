@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 
+// part 'userdetail.g.dart';
 
 @HiveType(typeId: 0)
 class UserDetails extends HiveObject {
@@ -19,11 +20,15 @@ class UserDetails extends HiveObject {
   @HiveField(4)
   String? phone;
 
+  @HiveField(5)
+  int? createdAt; // Store creation timestamp
+
   UserDetails({
     required this.name,
     required this.email,
     this.image,
     required this.token,
     this.phone,
+    this.createdAt,
   });
 }

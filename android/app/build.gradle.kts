@@ -6,8 +6,7 @@ plugins {
 }
 
 android {
-//    namespace = "com.nsquareinternational.app"
-    namespace = "com.nsqureshorts.app"
+    namespace = "com.nsquareinternational.n2shorts"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -22,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.nsqureshorts.app"
+        applicationId = "com.nsquareinternational.n2shorts"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

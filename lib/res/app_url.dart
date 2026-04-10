@@ -1,9 +1,9 @@
 class AppUrls {
 
-  static const String baseUrl = "http://192.168.1.40:9000/api";
-  static const String baseImageUrl = "http://192.168.1.40:9000";
-  // static const String baseUrl = "https://n-square-international.vercel.app/api";
-  // static const String baseImageUrl = "https://n-square-international.vercel.app";
+  // static const String baseUrl = "http://192.168.1.40:9000/api";
+  // static const String baseImageUrl = "http://192.168.1.40:9000";
+  static const String baseUrl = "https://n-square-international.vercel.app/api";
+  static const String baseImageUrl = "https://n-square-international.vercel.app";
 
   //--------------------------------------------------
   //auth

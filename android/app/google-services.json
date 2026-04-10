@@ -1,22 +1,21 @@
 {
   "project_info": {
-    "project_number": "1065959179509",
-    "firebase_url": "https://iot-lab-webapp-default-rtdb.firebaseio.com",
-    "project_id": "iot-lab-webapp",
-    "storage_bucket": "iot-lab-webapp.firebasestorage.app"
+    "project_number": "102284619861",
+    "project_id": "n2shorts-70792",
+    "storage_bucket": "n2shorts-70792.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1065959179509:android:df383600ab761034dc71bc",
+        "mobilesdk_app_id": "1:102284619861:android:acdf01669083093a33a4dc",
         "android_client_info": {
-          "package_name": "com.nsqureshorts.app"
+          "package_name": "com.nsquareinternational.n2shorts"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCzmdIZ0-UyDrJm8xXBeBgtJBSlEHXYGps"
+          "current_key": "AIzaSyDLp0bqBLK-3MhBId1OcpQBG9ipFbLu3JQ"
         }
       ],
       "services": {

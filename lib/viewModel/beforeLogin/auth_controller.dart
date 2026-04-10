@@ -139,6 +139,7 @@ class OtpController extends GetxController {
         token: token,
         phone: userJson["phone"] ?? phone,
         email: userJson["email"] ?? "",
+        createdAt: DateTime.now().millisecondsSinceEpoch, // Store creation/login time
       );
 
       await HiveService.saveUser(user);
