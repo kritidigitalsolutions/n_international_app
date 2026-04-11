@@ -109,6 +109,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
   /// ✅ RX STATES
   final isLoading = true.obs;
   final isError = false.obs;
+  final isLocked = false.obs;
   final isPlaying = false.obs;
 
   late final SeriesDetailController _seriesController;
@@ -116,6 +117,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
 
   final SeriesRepo _repo = SeriesRepo();
   int lastSentSecond = 0;
+  Worker? _unlockWorker;
 
   @override
   void initState() {
@@ -132,6 +134,13 @@ class _VideoReelItemState extends State<VideoReelItem> {
     if (widget.isCurrent) {
       _initializeVideo();
     }
+
+    // Listen for changes in unlocked episodes to automatically try playing if it was locked
+    _unlockWorker = ever(_seriesController.locallyUnlockedIds, (ids) {
+      if (widget.isCurrent && isLocked.value && ids.contains(widget.episode.id)) {
+        _initializeVideo();
+      }
+    });
   }
 
   @override
@@ -150,12 +159,18 @@ class _VideoReelItemState extends State<VideoReelItem> {
     if (!mounted) return;
 
     /// 🔒 LOCK CHECK
-    if (widget.episode.alreadyUnlocked != true) {
+    bool alreadyUnlocked = widget.episode.alreadyUnlocked == true || 
+                          _seriesController.locallyUnlockedIds.contains(widget.episode.id) ||
+                          widget.episode.isLocked == false;
+
+    if (!alreadyUnlocked && !widget.isOffline) {
       isLoading.value = false;
-      isError.value = true;
+      isLocked.value = true;
+      isError.value = false;
       return;
     }
 
+    isLocked.value = false;
     isLoading.value = true;
     isError.value = false;
 
@@ -210,7 +225,13 @@ class _VideoReelItemState extends State<VideoReelItem> {
     } catch (e) {
       debugPrint("❌ Video Error: $e");
       isLoading.value = false;
-      isError.value = true;
+      
+      // If error contains "lock" or "pay", it's a lock issue
+      if (e.toString().toLowerCase().contains("lock") || e.toString().contains("403")) {
+        isLocked.value = true;
+      } else {
+        isError.value = true;
+      }
     }
   }
 
@@ -237,6 +258,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
 
   @override
   void dispose() {
+    _unlockWorker?.dispose();
     _disposeVideo();
     super.dispose();
   }
@@ -268,7 +290,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
                   child: CircularProgressIndicator(
                       color: AppColors.primary))
 
-            else if (isError.value)
+            else if (isLocked.value)
             /// 🔒 LOCKED
               Center(
                 child: Column(
@@ -284,6 +306,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
                     ),
                     const SizedBox(height: 10),
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                       onPressed: () {
                         if (widget.series?.sId != null &&
                             widget.episode.id != null) {
@@ -293,12 +316,27 @@ class _VideoReelItemState extends State<VideoReelItem> {
                           );
                         }
                       },
-                      child: const Text("Unlock ₹1"),
+                      child: const Text("Unlock ₹1", style: TextStyle(color: Colors.white)),
                     )
                   ],
                 ),
               )
-
+            else if (isError.value)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white, size: 50),
+                    const SizedBox(height: 10),
+                    const Text("Failed to load video", style: TextStyle(color: Colors.white)),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: _initializeVideo,
+                      child: const Text("Retry"),
+                    )
+                  ],
+                ),
+              )
             else if (_videoPlayerController != null &&
                   _videoPlayerController!.value.isInitialized)
                 GestureDetector(
@@ -430,7 +468,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
             /// ▶ PLAY ICON
             if (!isPlaying.value &&
                 !isLoading.value &&
-                !isError.value)
+                !isError.value && !isLocked.value)
               const Center(
                 child: Icon(Icons.play_arrow,
                     size: 80, color: Colors.white54),
@@ -457,246 +495,3 @@ class _VideoReelItemState extends State<VideoReelItem> {
     );
   }
 }
-
-
-
-// class _VideoReelItemState extends State<VideoReelItem> {
-//   VideoPlayerController? _videoPlayerController;
-//   bool _isLoading = true;
-//   bool _isError = false;
-//
-//   // Use lazy put to avoid crash if not registered
-//   late final SeriesDetailController _seriesController;
-//   late final HistoryController _historyController;
-//
-//   final SeriesRepo _repo = SeriesRepo();
-//   int lastSentSecond = 0;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _seriesController = Get.isRegistered<SeriesDetailController>()
-//         ? Get.find<SeriesDetailController>()
-//         : Get.put(SeriesDetailController());
-//
-//     _historyController = Get.isRegistered<HistoryController>()
-//         ? Get.find<HistoryController>()
-//         : Get.put(HistoryController());
-//
-//     if (widget.isCurrent) {
-//       _initializeVideo();
-//     }
-//   }
-//
-//   @override
-//   void didUpdateWidget(VideoReelItem oldWidget) {
-//     super.didUpdateWidget(oldWidget);
-//     if (widget.isCurrent && !oldWidget.isCurrent) {
-//       _initializeVideo();
-//     } else if (!widget.isCurrent && oldWidget.isCurrent) {
-//       _disposeVideo();
-//     }
-//   }
-//
-//   Future<void> _initializeVideo() async {
-//     if (!mounted) return;
-//     setState(() {
-//       _isLoading = true;
-//       _isError = false;
-//     });
-//
-//     try {
-//       String? url;
-//
-//       if (widget.isOffline) {
-//         url = widget.episode.videoUrl;
-//         if (url == null || url.isEmpty) throw Exception("Local path missing");
-//         _videoPlayerController = VideoPlayerController.file(File(url));
-//       } else {
-//         _seriesController.getEpisodeLikeStatus(widget.episode.id!);
-//         final playData = await _repo.playEpisode(widget.episode.id!);
-//         url = playData.videoPlaybackUrl ?? playData.videoUrl;
-//
-//         if (url == null || url.isEmpty) throw Exception("Empty video URL");
-//         _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(url));
-//       }
-//
-//       await _videoPlayerController!.initialize();
-//       _videoPlayerController!.setLooping(true);
-//       _videoPlayerController!.play();
-//
-//       _videoPlayerController!.addListener(() {
-//         if (_videoPlayerController != null &&
-//             _videoPlayerController!.value.isInitialized &&
-//             _videoPlayerController!.value.isPlaying) {
-//
-//           final position = _videoPlayerController!.value.position.inSeconds;
-//           if (!widget.isOffline && position > 0 && position % 10 == 0 && position != lastSentSecond) {
-//             lastSentSecond = position;
-//             _sendHistoryToApi(position);
-//           }
-//         }
-//         if (mounted) setState(() {});
-//       });
-//
-//       if (mounted) setState(() => _isLoading = false);
-//     } catch (e) {
-//       debugPrint("❌ Video Error: $e");
-//       if (mounted) setState(() {
-//         _isLoading = false;
-//         _isError = true;
-//       });
-//     }
-//   }
-//
-//   void _sendHistoryToApi(int position) {
-//     if (!widget.isOffline && widget.series?.sId != null) {
-//       _historyController.updateWatchHistory(
-//         seriesId: widget.series!.sId!,
-//         episodeId: widget.episode.id ?? "",
-//         progressSeconds: position,
-//       );
-//     }
-//   }
-//
-//   void _disposeVideo() {
-//     if (_videoPlayerController != null) {
-//       if (!widget.isOffline) _sendHistoryToApi(_videoPlayerController!.value.position.inSeconds);
-//       _videoPlayerController?.dispose();
-//       _videoPlayerController = null;
-//     }
-//   }
-//
-//   @override
-//   void dispose() {
-//     _disposeVideo();
-//     super.dispose();
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.black,
-//       body: Stack(
-//         fit: StackFit.expand,
-//         children: [
-//           if (_isLoading)
-//             const Center(child: CircularProgressIndicator(color: AppColors.primary))
-//           else if (_isError)
-//             const Center(child: Text("Failed to load video", style: TextStyle(color: Colors.white)))
-//           else if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized)
-//               GestureDetector(
-//                 onTap: () {
-//                   setState(() {
-//                     _videoPlayerController!.value.isPlaying
-//                         ? _videoPlayerController!.pause()
-//                         : _videoPlayerController!.play();
-//                   });
-//                 },
-//                 child: FittedBox(
-//                   fit: BoxFit.cover,
-//                   child: SizedBox(
-//                     width: _videoPlayerController!.value.size.width,
-//                     height: _videoPlayerController!.value.size.height,
-//                     child: VideoPlayer(_videoPlayerController!),
-//                   ),
-//                 ),
-//               ),
-//
-//           Container(
-//             decoration: BoxDecoration(
-//               gradient: LinearGradient(
-//                 colors: [
-//                   Colors.black.withOpacity(0.3),
-//                   Colors.transparent,
-//                   Colors.transparent,
-//                   Colors.black.withOpacity(0.8),
-//                 ],
-//                 begin: Alignment.topCenter,
-//                 end: Alignment.bottomCenter,
-//               ),
-//             ),
-//           ),
-//
-//           Positioned(
-//             top: 40,
-//             left: 10,
-//             child: IconButton(
-//               icon: const Icon(Icons.arrow_back, color: Colors.white),
-//               onPressed: () => Get.back(),
-//             ),
-//           ),
-//
-//           if (!widget.isOffline)
-//             Positioned(
-//               right: 15,
-//               bottom: 100,
-//               child: Column(
-//                 children: [
-//                   Obx(() => _actionButton(
-//                     _seriesController.isLiked.value ? Icons.thumb_up : Icons.thumb_up_outlined,
-//                     _seriesController.likesCount.value.toString(),
-//                     color: _seriesController.isLiked.value ? Colors.blue : Colors.white,
-//                     onTap: () {
-//                       _seriesController.toggleEpisodeLike(widget.episode.id!);
-//                     },
-//                   )),
-//                   const SizedBox(height: 25),
-//                   _actionButton(Icons.share, "Share", onTap: () {}),
-//                 ],
-//               ),
-//             ),
-//
-//           Positioned(
-//             left: 20,
-//             right: 80,
-//             bottom: 40,
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 Text(
-//                   widget.episode.title ?? widget.series?.title ?? "Episode Playing",
-//                   style: text20(color: Colors.white, fontWeight: FontWeight.bold),
-//                 ),
-//                 const SizedBox(height: 8),
-//                 Text(
-//                   widget.episode.description ?? "Enjoy your drama",
-//                   maxLines: 2,
-//                   overflow: TextOverflow.ellipsis,
-//                   style: text14(color: Colors.white.withOpacity(0.9)),
-//                 ),
-//                 const SizedBox(height: 20),
-//                 if (_videoPlayerController != null)
-//                   VideoProgressIndicator(
-//                     _videoPlayerController!,
-//                     allowScrubbing: true,
-//                     colors: VideoProgressColors(
-//                       playedColor: AppColors.primary,
-//                       bufferedColor: Colors.white.withOpacity(0.3),
-//                       backgroundColor: Colors.white.withOpacity(0.2),
-//                     ),
-//                   ),
-//               ],
-//             ),
-//           ),
-//
-//           if (_videoPlayerController != null && !_videoPlayerController!.value.isPlaying && !_isLoading)
-//             const Center(child: Icon(Icons.play_arrow, size: 80, color: Colors.white54)),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _actionButton(IconData icon, String label, {Color color = Colors.white, VoidCallback? onTap}) {
-//     return GestureDetector(
-//       onTap: onTap,
-//       child: Column(
-//         children: [
-//           Icon(icon, color: color, size: 35),
-//           const SizedBox(height: 5),
-//           Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-//         ],
-//       ),
-//     );
-//   }
-// }

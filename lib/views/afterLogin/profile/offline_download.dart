@@ -212,6 +212,7 @@ class _OfflineDownloadedScreenState extends State<OfflineDownloadedScreen> with 
         videoUrl: filePath,
         description: meta["subtitle"] ?? "",
         thumbnail: meta["image"],
+        alreadyUnlocked: true,
       );
 
       Get.toNamed(

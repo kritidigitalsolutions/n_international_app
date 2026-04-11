@@ -8,6 +8,8 @@ import '../../../utils/custom_button.dart';
 import '../../../utils/textStyle.dart';
 import '../../../viewModel/afterLogin/history_controller/histroy_controller.dart';
 import '../../../routes/app_routes.dart';
+import '../../../model/responce/series_res_model/episode_res_model.dart';
+import '../../../model/responce/series_res_model/series_res_model.dart';
 
 class HistoryScreen extends StatelessWidget {
   HistoryScreen({super.key});
@@ -169,13 +171,37 @@ class HistoryScreen extends StatelessWidget {
                             const Spacer(),
                             GestureDetector(
                               onTap: () {
+                                final seriesData = item['series'];
+                                final episodeData = item['episode'];
+                                
+                                if (seriesData == null || episodeData == null) {
+                                  Get.snackbar("Error", "Video information is missing", 
+                                    snackPosition: SnackPosition.BOTTOM, 
+                                    backgroundColor: Colors.red, 
+                                    colorText: Colors.white);
+                                  return;
+                                }
+
+                                final episode = Episode(
+                                  id: episodeData['_id'],
+                                  title: episodeData['title'],
+                                  videoUrl: item['mediaPlaybackUrl'],
+                                  thumbnail: item['thumbnailPlaybackUrl'],
+                                  alreadyUnlocked: true, // If it's in history, it was likely played/unlocked
+                                );
+
+                                final series = Series(
+                                  sId: seriesData['_id'],
+                                  title: seriesData['title'],
+                                );
+
                                 Get.toNamed(
                                   AppRoutes.videoPlay,
                                   arguments: {
-                                    "videoUrl": item['mediaPlaybackUrl'],
-                                    "episodeId": item['episode']?['_id'],
-                                    "videoId": item['series']?['_id'],
-                                    "progress": item['progressSeconds'],
+                                    'episodes': [episode],
+                                    'initialIndex': 0,
+                                    'series': series,
+                                    'isOffline': false,
                                   },
                                 );
                               },
