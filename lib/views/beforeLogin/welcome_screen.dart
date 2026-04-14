@@ -56,14 +56,14 @@ class WelcomeScreen extends StatelessWidget {
               /// 🌟 LOGO (NOW CLEAR)
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
+                // decoration: BoxDecoration(
+                //   color: Colors.white.withOpacity(0.1),
+                //   // shape: BoxShape.circle,
+                // ),
                 child: Image.asset(
-                  AppImages.logo2,
-                  height: 200,
-                  width: 200,
+                  AppImages.logo,
+                  height: 150,
+                  width: 150,
                 ),
               ),
 

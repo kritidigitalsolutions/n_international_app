@@ -38,8 +38,8 @@ class _OtpScreenState extends State<OtpScreen> {
                 children: [
                   /// 🔥 LOGO
                   Image.asset(
-                    AppImages.logo2,
-                    height: 200,
+                    AppImages.logo,
+                    height: 150,
                   ),
 
                   const SizedBox(height: 20),
