@@ -67,7 +67,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              // const SizedBox(height: 20),
 
               /// 🌟 GLASS TEXT CONTAINER
               Container(
@@ -79,22 +79,18 @@ class WelcomeScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Column(
-                  children: const [
-                    Text(
-                      "N Square International",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
+                  children: [
+                    Image.asset(
+                      AppImages.logowelcome,
+                      height: 80,
+                      width: 550,
                     ),
-                    SizedBox(height: 6),
-                    Text(
-                      "Quality • Trust • Innovation",
+                    // const SizedBox(height: 6),
+                    const Text(
+                      "WHERE   IDEAS   TAKES   THE   LEAD",
                       style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
+                        color: Colors.yellow,
+                        fontSize: 18,
                       ),
                       textAlign: TextAlign.center,
                     ),

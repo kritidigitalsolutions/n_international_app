@@ -109,8 +109,9 @@ class _ReelItemState extends State<ReelItem> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onHorizontalDragEnd: (details) {
-        if (details.primaryVelocity! > 0) {
-          controller.pauseAll(); // ADD THIS
+        // Change from right swipe (> 0) to left swipe (< 0)
+        if (details.primaryVelocity! < 0) {
+          controller.pauseAll();
           Get.toNamed(AppRoutes.seriesDetails, arguments: widget.series);
         }
       },
