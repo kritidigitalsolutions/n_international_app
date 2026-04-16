@@ -57,8 +57,11 @@ class WalletController extends GetxController {
 
     int amount = int.tryParse(amountStr) ?? 0;
 
-    if (amount <= 0) {
-      CustomSnackbar.showError(title: "Error", message: "Please enter a valid amount");
+    if (amount < 10) {
+      CustomSnackbar.showError(
+        title: "Error",
+        message: "Minimum recharge amount is ₹10",
+      );
       return;
     }
 

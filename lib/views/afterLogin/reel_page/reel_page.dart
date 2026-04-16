@@ -109,7 +109,6 @@ class _ReelItemState extends State<ReelItem> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onHorizontalDragEnd: (details) {
-        // Change from right swipe (> 0) to left swipe (< 0)
         if (details.primaryVelocity! < 0) {
           controller.pauseAll();
           Get.toNamed(AppRoutes.seriesDetails, arguments: widget.series);
@@ -163,7 +162,7 @@ class _ReelItemState extends State<ReelItem> {
             bottom: 120,
             child: Column(
               children: [
-                // Like icon for reels page
+                // Like icon
                 Obx(() {
                   final isLiked = controller.likedStatus[widget.series.sId!] ?? false;
                   final likeCount = controller.likeCounts[widget.series.sId!] ?? 0;
@@ -179,6 +178,15 @@ class _ReelItemState extends State<ReelItem> {
                   );
                 }),
                 const SizedBox(height: 25),
+
+                // ✅ MUTE/UNMUTE BUTTON
+                Obx(() => _actionButton(
+                  icon: controller.isMuted.value ? Icons.volume_off : Icons.volume_up,
+                  label: controller.isMuted.value ? "Muted" : "Mute",
+                  onTap: () => controller.toggleMute(),
+                )),
+                const SizedBox(height: 25),
+
                 _actionButton(
                   icon: Icons.share,
                   label: "Share",
@@ -192,7 +200,7 @@ class _ReelItemState extends State<ReelItem> {
           Positioned(
             left: 20,
             right: 20,
-            bottom: 80, // Moved up to avoid navigation bar overlap
+            bottom: 80,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

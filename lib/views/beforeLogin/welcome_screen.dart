@@ -71,7 +71,7 @@ class WelcomeScreen extends StatelessWidget {
 
               /// 🌟 GLASS TEXT CONTAINER
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 25),
+                margin: const EdgeInsets.symmetric(horizontal: 10),
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20, vertical: 15),
                 decoration: BoxDecoration(
@@ -80,6 +80,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
+                    const Text("By ", style: TextStyle(color: Colors.yellow, fontSize: 15,fontWeight: FontWeight.bold )),
                     Image.asset(
                       AppImages.logowelcome,
                       height: 80,

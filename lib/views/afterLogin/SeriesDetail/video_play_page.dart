@@ -111,6 +111,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
   final isError = false.obs;
   final isLocked = false.obs;
   final isPlaying = false.obs;
+  final isMuted = false.obs;
 
   late final SeriesDetailController _seriesController;
   late final HistoryController _historyController;
@@ -135,7 +136,6 @@ class _VideoReelItemState extends State<VideoReelItem> {
       _initializeVideo();
     }
 
-    // Listen for changes in unlocked episodes to automatically try playing if it was locked
     _unlockWorker = ever(_seriesController.locallyUnlockedIds, (ids) {
       if (widget.isCurrent && isLocked.value && ids.contains(widget.episode.id)) {
         _initializeVideo();
@@ -154,11 +154,9 @@ class _VideoReelItemState extends State<VideoReelItem> {
     }
   }
 
-  /// 🔥 INIT VIDEO
   Future<void> _initializeVideo() async {
     if (!mounted) return;
 
-    /// 🔒 LOCK CHECK
     bool alreadyUnlocked = widget.episode.alreadyUnlocked == true || 
                           _seriesController.locallyUnlockedIds.contains(widget.episode.id) ||
                           widget.episode.isLocked == false;
@@ -180,41 +178,34 @@ class _VideoReelItemState extends State<VideoReelItem> {
       if (widget.isOffline) {
         url = widget.episode.videoUrl;
         if (url == null || url.isEmpty) throw Exception("Local path missing");
-
         _videoPlayerController = VideoPlayerController.file(File(url));
       } else {
         _seriesController.getEpisodeLikeStatus(widget.episode.id!);
-
         final playData = await _repo.playEpisode(widget.episode.id!);
         url = playData.videoPlaybackUrl ?? playData.videoUrl;
-
         if (url == null || url.isEmpty) throw Exception("Empty URL");
-
-        _videoPlayerController =
-            VideoPlayerController.networkUrl(Uri.parse(url));
+        _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(url));
       }
 
       await _videoPlayerController!.initialize();
       await _videoPlayerController!.setLooping(true);
       await _videoPlayerController!.play();
-
+      
+      _videoPlayerController!.setVolume(isMuted.value ? 0 : 1.0);
       isPlaying.value = true;
 
-      /// 🎯 LISTENER
       _videoPlayerController!.addListener(() {
         if (_videoPlayerController == null) return;
-
         final controller = _videoPlayerController!;
-
-        isPlaying.value = controller.value.isPlaying;
+        
+        // Sync play state
+        if (isPlaying.value != controller.value.isPlaying) {
+          isPlaying.value = controller.value.isPlaying;
+        }
 
         if (controller.value.isInitialized && controller.value.isPlaying) {
           final position = controller.value.position.inSeconds;
-
-          if (!widget.isOffline &&
-              position > 0 &&
-              position % 10 == 0 &&
-              position != lastSentSecond) {
+          if (!widget.isOffline && position > 0 && position % 10 == 0 && position != lastSentSecond) {
             lastSentSecond = position;
             _sendHistoryToApi(position);
           }
@@ -223,10 +214,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
 
       isLoading.value = false;
     } catch (e) {
-      debugPrint("❌ Video Error: $e");
       isLoading.value = false;
-      
-      // If error contains "lock" or "pay", it's a lock issue
       if (e.toString().toLowerCase().contains("lock") || e.toString().contains("403")) {
         isLocked.value = true;
       } else {
@@ -248,8 +236,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
   void _disposeVideo() {
     if (_videoPlayerController != null) {
       if (!widget.isOffline) {
-        _sendHistoryToApi(
-            _videoPlayerController!.value.position.inSeconds);
+        _sendHistoryToApi(_videoPlayerController!.value.position.inSeconds);
       }
       _videoPlayerController?.dispose();
       _videoPlayerController = null;
@@ -264,8 +251,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
   }
 
   void _togglePlayPause() {
-    if (_videoPlayerController == null) return;
-
+    if (_videoPlayerController == null || !_videoPlayerController!.value.isInitialized) return;
     if (_videoPlayerController!.value.isPlaying) {
       _videoPlayerController!.pause();
       isPlaying.value = false;
@@ -273,6 +259,13 @@ class _VideoReelItemState extends State<VideoReelItem> {
       _videoPlayerController!.play();
       isPlaying.value = true;
     }
+    setState(() {}); // For instant UI feedback
+  }
+
+  void _toggleMute() {
+    if (_videoPlayerController == null) return;
+    isMuted.value = !isMuted.value;
+    _videoPlayerController!.setVolume(isMuted.value ? 0 : 1.0);
   }
 
   @override
@@ -282,38 +275,24 @@ class _VideoReelItemState extends State<VideoReelItem> {
       body: Obx(() {
         return Stack(
           fit: StackFit.expand,
-          clipBehavior: Clip.hardEdge,
           children: [
-            /// 🎬 VIDEO / STATES
+            /// 🎬 VIDEO PLAYER
             if (isLoading.value)
-              const Center(
-                  child: CircularProgressIndicator(
-                      color: AppColors.primary))
-
+              const Center(child: CircularProgressIndicator(color: AppColors.primary))
             else if (isLocked.value)
-            /// 🔒 LOCKED
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.lock,
-                        color: Colors.white, size: 50),
+                    const Icon(Icons.lock, color: Colors.white, size: 50),
                     const SizedBox(height: 10),
-                    const Text(
-                      "Episode Locked",
-                      style:
-                      TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+                    const Text("Episode Locked", style: TextStyle(color: Colors.white, fontSize: 16)),
                     const SizedBox(height: 10),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                       onPressed: () {
-                        if (widget.series?.sId != null &&
-                            widget.episode.id != null) {
-                          _seriesController.unlockEpisode(
-                            widget.series!.sId!,
-                            widget.episode.id!,
-                          );
+                        if (widget.series?.sId != null && widget.episode.id != null) {
+                          _seriesController.unlockEpisode(widget.series!.sId!, widget.episode.id!);
                         }
                       },
                       child: const Text("Unlock ₹1", style: TextStyle(color: Colors.white)),
@@ -330,88 +309,78 @@ class _VideoReelItemState extends State<VideoReelItem> {
                     const SizedBox(height: 10),
                     const Text("Failed to load video", style: TextStyle(color: Colors.white)),
                     const SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: _initializeVideo,
-                      child: const Text("Retry"),
-                    )
+                    ElevatedButton(onPressed: _initializeVideo, child: const Text("Retry"))
                   ],
                 ),
               )
-            else if (_videoPlayerController != null &&
-                  _videoPlayerController!.value.isInitialized)
+            else if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized)
                 GestureDetector(
                   onTap: _togglePlayPause,
                   child: SizedBox.expand(
                     child: FittedBox(
                       fit: BoxFit.cover,
                       child: SizedBox(
-                        width:
-                        _videoPlayerController!.value.size.width,
-                        height:
-                        _videoPlayerController!.value.size.height,
+                        width: _videoPlayerController!.value.size.width,
+                        height: _videoPlayerController!.value.size.height,
                         child: VideoPlayer(_videoPlayerController!),
                       ),
                     ),
                   ),
                 ),
 
-            /// 🌫 GRADIENT FIX
+            /// 🌫 GRADIENT OVERLAY (Wrapped in IgnorePointer to fix play/pause taps)
             Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.3),
-                      Colors.transparent,
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.8),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.black.withOpacity(0.3), Colors.transparent, Colors.transparent, Colors.black.withOpacity(0.8)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
                   ),
                 ),
               ),
             ),
 
-            /// 🔙 BACK
+            /// 🔙 BACK BUTTON
             Positioned(
               top: 40,
               left: 10,
               child: IconButton(
-                icon:
-                const Icon(Icons.arrow_back, color: Colors.white),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () => Get.back(),
               ),
             ),
 
-            /// ❤️ LIKE / SHARE
-            if (!widget.isOffline)
-              Positioned(
-                right: 15,
-                bottom: 100,
-                child: Column(
-                  children: [
+            /// 🛠 ACTION BUTTONS (LIKE, MUTE, SHARE)
+            Positioned(
+              right: 15,
+              bottom: 100,
+              child: Column(
+                children: [
+                  if (!widget.isOffline) ...[
                     Obx(() => _actionButton(
-                      _seriesController.isLiked.value
-                          ? Icons.thumb_up
-                          : Icons.thumb_up_outlined,
-                      _seriesController.likesCount.value
-                          .toString(),
-                      color: _seriesController.isLiked.value
-                          ? Colors.blue
-                          : Colors.white,
-                      onTap: () {
-                        _seriesController.toggleEpisodeLike(
-                            widget.episode.id!);
-                      },
+                      _seriesController.isLiked.value ? Icons.thumb_up : Icons.thumb_up_outlined,
+                      _seriesController.likesCount.value.toString(),
+                      color: _seriesController.isLiked.value ? Colors.blue : Colors.white,
+                      onTap: () => _seriesController.toggleEpisodeLike(widget.episode.id!),
                     )),
                     const SizedBox(height: 25),
-                    _actionButton(Icons.share, "Share"),
                   ],
-                ),
+                  // ✅ MUTE/UNMUTE BUTTON
+                  Obx(() => _actionButton(
+                    isMuted.value ? Icons.volume_off : Icons.volume_up,
+                    isMuted.value ? "Muted" : "Mute",
+                    onTap: _toggleMute,
+                  )),
+                  const SizedBox(height: 25),
+                  _actionButton(Icons.share, "Share"),
+                ],
               ),
+            ),
 
-            /// 📝 TITLE + SEEK
+            /// 📝 TITLE & PROGRESS
             Positioned(
               left: 20,
               right: 80,
@@ -419,45 +388,18 @@ class _VideoReelItemState extends State<VideoReelItem> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.episode.title ??
-                        widget.series?.title ??
-                        "Episode Playing",
-                    style: text20(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold),
-                  ),
+                  Text(widget.episode.title ?? widget.series?.title ?? "Episode Playing", style: text20(color: Colors.white, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text(
-                    widget.episode.description ??
-                        "Enjoy your drama",
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: text14(
-                        color: Colors.white.withOpacity(0.9)),
-                  ),
+                  Text(widget.episode.description ?? "Enjoy your drama", maxLines: 2, overflow: TextOverflow.ellipsis, style: text14(color: Colors.white.withOpacity(0.9))),
                   const SizedBox(height: 20),
-
-                  /// 🔥 SEEK FIX
                   if (_videoPlayerController != null)
                     AnimatedBuilder(
                       animation: _videoPlayerController!,
                       builder: (context, child) {
-                        if (!_videoPlayerController!
-                            .value.isInitialized) {
-                          return const SizedBox();
-                        }
-
                         return VideoProgressIndicator(
                           _videoPlayerController!,
                           allowScrubbing: true,
-                          colors: VideoProgressColors(
-                            playedColor: AppColors.primary,
-                            bufferedColor:
-                            Colors.white.withOpacity(0.3),
-                            backgroundColor:
-                            Colors.white.withOpacity(0.2),
-                          ),
+                          colors: VideoProgressColors(playedColor: AppColors.primary, bufferedColor: Colors.white.withOpacity(0.3), backgroundColor: Colors.white.withOpacity(0.2)),
                         );
                       },
                     ),
@@ -465,31 +407,23 @@ class _VideoReelItemState extends State<VideoReelItem> {
               ),
             ),
 
-            /// ▶ PLAY ICON
-            if (!isPlaying.value &&
-                !isLoading.value &&
-                !isError.value && !isLocked.value)
-              const Center(
-                child: Icon(Icons.play_arrow,
-                    size: 80, color: Colors.white54),
-              ),
+            /// ▶ PLAY ICON (When paused)
+            if (!isPlaying.value && !isLoading.value && !isError.value && !isLocked.value)
+              const Center(child: Icon(Icons.play_arrow, size: 80, color: Colors.white54)),
           ],
         );
       }),
     );
   }
 
-  Widget _actionButton(IconData icon, String label,
-      {Color color = Colors.white, VoidCallback? onTap}) {
+  Widget _actionButton(IconData icon, String label, {Color color = Colors.white, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
           Icon(icon, color: color, size: 35),
           const SizedBox(height: 5),
-          Text(label,
-              style:
-              const TextStyle(color: Colors.white, fontSize: 12)),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
         ],
       ),
     );
