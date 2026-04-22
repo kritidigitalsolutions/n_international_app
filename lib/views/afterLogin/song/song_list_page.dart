@@ -88,34 +88,6 @@ class ListenSongsPage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        // Improved Dropdown UI
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.white.withOpacity(0.05),
-                            border: Border.all(color: AppColors.white.withOpacity(0.2)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: controller.selectedLanguage.value,
-                              dropdownColor: const Color(0xFF1A1A1A),
-                              icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.white),
-                              style: text14(color: AppColors.white),
-                              items: controller.languages.map((String lang) {
-                                return DropdownMenuItem<String>(
-                                  value: lang,
-                                  child: Text(lang),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                if (newValue != null) {
-                                  controller.changeLanguage(newValue);
-                                }
-                              },
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -134,6 +106,60 @@ class ListenSongsPage extends StatelessWidget {
                       _buildTabButton('Top Charts', 2, controller),
                       _buildTabButton('New Releases', 3, controller),
                     ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Language Row (All, Hindi, English, etc.)
+                Obx(
+                  () => SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      children: List.generate(controller.languages.length, (index) {
+                        final lang = controller.languages[index];
+                        final isSelected = controller.selectedLanguage.value == lang;
+                        return InkWell(
+                          onTap: () => controller.changeLanguage(lang),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.error.withOpacity(0.1)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                if (lang == 'All')
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6.0),
+                                    child: Icon(
+                                      Icons.translate_rounded,
+                                      size: 20,
+                                      color: AppColors.error.withOpacity(0.8),
+                                    ),
+                                  ),
+                                Text(
+                                  lang,
+                                  style: text12(
+                                    color: isSelected
+                                        ? AppColors.error
+                                        : AppColors.textSecondary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),

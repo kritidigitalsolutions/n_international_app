@@ -87,6 +87,11 @@ class AppUrls {
   static const String updateFcmToken = "$baseUrl/notifications/fcm-token";
 
   //-----------------------------------------------------------
+  // Languages
+  //-----------------------------------------------------------
+  static const String languages = "$baseUrl/languages";
+
+  //-----------------------------------------------------------
   // images
   //-----------------------------------------------
   static String getImageUrl(String? url) {

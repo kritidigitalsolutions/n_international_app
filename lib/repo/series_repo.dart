@@ -1,4 +1,5 @@
 import '../data/network/api_network_service.dart';
+import '../model/responce/language_res_model.dart';
 import '../model/responce/series_res_model/episode_res_model.dart';
 import '../model/responce/series_res_model/favorite_res_model.dart';
 import '../model/responce/series_res_model/play_episode_res_model.dart';
@@ -8,6 +9,17 @@ import '../utils/hive_service/hive_service.dart';
 
 class SeriesRepo {
   final _api = NetworkApiService();
+
+  Future<LanguageResModel> fetchLanguages() async {
+    try {
+      final token = HiveService.getToken();
+      if (token != null) _api.setToken(token);
+      final response = await _api.getApi(AppUrls.languages);
+      return LanguageResModel.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   Future<SeriesResModel> fetchSeries({int page = 1, int limit = 20, String? search}) async {
     try {

@@ -1,3 +1,4 @@
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/data/api_responce_data.dart';
@@ -163,11 +164,14 @@ class MusicPlayerPage extends StatelessWidget {
                                         : Icons.play_arrow,
                                     color: Colors.white,
                                   ),
-                                  onPressed: () {
+                                  onPressed: () async {
                                     if (controller.isPlaying.value) {
                                       controller.audioPlayer.pause();
                                     } else {
-                                      controller.audioPlayer.play();
+                                      final session = await AudioSession.instance;
+                                      if (await session.setActive(true)) {
+                                        controller.audioPlayer.play();
+                                      }
                                     }
                                   },
                                 )),

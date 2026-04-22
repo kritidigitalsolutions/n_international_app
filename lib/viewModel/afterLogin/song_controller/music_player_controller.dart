@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
@@ -25,8 +26,14 @@ class MusicPlayerController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _initAudioSession();
     handleArguments();
     setupListeners();
+  }
+
+  Future<void> _initAudioSession() async {
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
   }
   void handleArguments() {
     final args = Get.arguments;
@@ -175,17 +182,20 @@ class MusicPlayerController extends GetxController {
     print("🎧 PLAY REQUEST: $path");
 
     try {
-      if (path.startsWith("/")) {
-        /// ✅ LOCAL FILE
-        print("📁 LOCAL FILE PLAY");
-        await audioPlayer.setFilePath(path);
-      } else {
-        /// 🌐 NETWORK
-        print("🌐 NETWORK PLAY");
-        await audioPlayer.setUrl(path);
-      }
+      final session = await AudioSession.instance;
+      if (await session.setActive(true)) {
+        if (path.startsWith("/")) {
+          /// ✅ LOCAL FILE
+          print("📁 LOCAL FILE PLAY");
+          await audioPlayer.setFilePath(path);
+        } else {
+          /// 🌐 NETWORK
+          print("🌐 NETWORK PLAY");
+          await audioPlayer.setUrl(path);
+        }
 
-      audioPlayer.play();
+        audioPlayer.play();
+      }
     } catch (e) {
       print("❌ AUDIO ERROR: $e");
     }
@@ -202,11 +212,14 @@ class MusicPlayerController extends GetxController {
   //   }
   // }
 
-  void togglePlayPause() {
+  void togglePlayPause() async {
     if (audioPlayer.playing) {
       audioPlayer.pause();
     } else {
-      audioPlayer.play();
+      final session = await AudioSession.instance;
+      if (await session.setActive(true)) {
+        audioPlayer.play();
+      }
     }
   }
 

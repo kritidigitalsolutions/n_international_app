@@ -12,6 +12,11 @@ class HomeController extends GetxController {
 
   /// API State
   var seriesResponse = ApiResponse<SeriesResModel>.loading().obs;
+  var allSeries = <Series>[].obs;
+
+  /// Language State
+  var selectedLanguage = 'All'.obs;
+  var languages = <String>['All'].obs;
 
   /// Category Lists
   var popularSeries = <Series>[].obs;
@@ -57,7 +62,22 @@ class HomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    fetchLanguages();
     fetchSeries();
+  }
+
+  Future<void> fetchLanguages() async {
+    try {
+      final response = await _repo.fetchLanguages();
+      if (response.success == true && response.languages != null) {
+        List<String> langNames = ['All'];
+        langNames.addAll(
+            response.languages!.map((l) => l.name ?? "").where((n) => n.isNotEmpty));
+        languages.assignAll(langNames);
+      }
+    } catch (e) {
+      print("Error fetching languages: $e");
+    }
   }
 
   /// API Call
@@ -69,31 +89,49 @@ class HomeController extends GetxController {
       seriesResponse.value = ApiResponse.completed(response);
 
       if (response.series != null) {
-        final list = response.series!;
-
-        popularSeries.assignAll(
-          list.where((s) => s.isPopular ?? false).toList(),
-        );
-
-        latestSeries.assignAll(
-          list.where((s) => s.isLatest ?? false).toList(),
-        );
-
-        romanticSeries.assignAll(
-          list.where((s) => s.isRomantic ?? false).toList(),
-        );
-
-        revengeSeries.assignAll(
-          list.where((s) => s.isRevengeDrama ?? false).toList(),
-        );
-
-        newReleaseSeries.assignAll(
-          list.where((s) => s.isNewRelease ?? false).toList(),
-        );
+        allSeries.assignAll(response.series!);
+        applyLanguageFilter();
       }
     } catch (e) {
       seriesResponse.value = ApiResponse.error(e.toString());
     }
+  }
+
+  void applyLanguageFilter() {
+    List<Series> filteredList = allSeries;
+
+    if (selectedLanguage.value != 'All') {
+      filteredList = allSeries.where((s) {
+        return s.languages?.any((lang) =>
+                lang.toLowerCase() == selectedLanguage.value.toLowerCase()) ??
+            false;
+      }).toList();
+    }
+
+    popularSeries.assignAll(
+      filteredList.where((s) => s.isPopular ?? false).toList(),
+    );
+
+    latestSeries.assignAll(
+      filteredList.where((s) => s.isLatest ?? false).toList(),
+    );
+
+    romanticSeries.assignAll(
+      filteredList.where((s) => s.isRomantic ?? false).toList(),
+    );
+
+    revengeSeries.assignAll(
+      filteredList.where((s) => s.isRevengeDrama ?? false).toList(),
+    );
+
+    newReleaseSeries.assignAll(
+      filteredList.where((s) => s.isNewRelease ?? false).toList(),
+    );
+  }
+
+  void setLanguage(String lang) {
+    selectedLanguage.value = lang;
+    applyLanguageFilter();
   }
 
   /// Search API Call

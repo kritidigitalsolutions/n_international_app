@@ -92,10 +92,17 @@ class _ReelItemState extends State<ReelItem> {
   @override
   void didUpdateWidget(ReelItem oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.index != widget.index) {
+    // Re-sync the controller if the index changed or if the controller itself was recreated (e.g., during filtering)
+    final currentControllerFromRepo = controller.getController(widget.index);
+    if (oldWidget.index != widget.index || _videoController != currentControllerFromRepo) {
       _videoController.removeListener(_videoListener);
-      _videoController = controller.getController(widget.index);
+      _videoController = currentControllerFromRepo;
       _videoController.addListener(_videoListener);
+      
+      // Ensure the current one plays if it was swapped
+      if (widget.index == controller.currentIndex.value && !_videoController.value.isPlaying) {
+        _videoController.play();
+      }
     }
   }
 
@@ -229,7 +236,59 @@ class _ReelItemState extends State<ReelItem> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+
+                /// Language Filter Row
+                Obx(
+                  () => SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: List.generate(controller.homeController.languages.length, (index) {
+                        final lang = controller.homeController.languages[index];
+                        final isSelected = controller.homeController.selectedLanguage.value == lang;
+                        return InkWell(
+                          onTap: () => controller.homeController.setLanguage(lang),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.error.withOpacity(0.1)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                if (lang == 'All')
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6.0),
+                                    child: Icon(
+                                      Icons.translate_rounded,
+                                      size: 20,
+                                      color: AppColors.error.withOpacity(0.8),
+                                    ),
+                                  ),
+                                Text(
+                                  lang,
+                                  style: text12(
+                                    color: isSelected
+                                        ? AppColors.error
+                                        : Colors.white70,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 /// Seek Bar
                 VideoProgressIndicator(

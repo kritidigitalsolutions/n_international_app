@@ -29,6 +29,7 @@ class Song {
   DateTime? createdAt;
   DateTime? updatedAt;
   String? thumbnail;
+  String? language;
 
   Song({
     this.id,
@@ -44,6 +45,7 @@ class Song {
     this.createdAt,
     this.updatedAt,
     this.thumbnail,
+    this.language,
   });
 
   Song.fromJson(Map<String, dynamic> json) {
@@ -60,5 +62,6 @@ class Song {
     createdAt = DateTime.tryParse(json["createdAt"] ?? "");
     updatedAt = DateTime.tryParse(json["updatedAt"] ?? "");
     thumbnail = json['thumbnail'];
+    language = json['language'];
   }
 }

@@ -1,12 +1,17 @@
+import 'package:audio_session/audio_session.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:n_square_international/model/responce/series_res_model/series_res_model.dart';
 import 'package:n_square_international/repo/series_repo.dart';
+import 'package:n_square_international/viewModel/afterLogin/home_controller.dart';
 import 'package:video_player/video_player.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ReelController extends GetxController {
   final SeriesRepo _repo = SeriesRepo();
+  final HomeController homeController = Get.find<HomeController>();
 
+  var allReels = <Series>[].obs;
   var seriesList = <Series>[].obs;
   var isLoading = true.obs;
   var currentIndex = 0.obs;
@@ -20,7 +25,17 @@ class ReelController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _initAudioSession();
     fetchReels();
+    // Listen to language changes from HomeController
+    ever(homeController.selectedLanguage, (_) {
+      applyLanguageFilter();
+    });
+  }
+
+  Future<void> _initAudioSession() async {
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
   }
 
   Future<void> fetchReels() async {
@@ -29,16 +44,49 @@ class ReelController extends GetxController {
       final response = await _repo.fetchSeries(page: 1, limit: 50);
       if (response.series != null) {
         var list = response.series!.where((s) => s.trailerUrl != null && s.trailerUrl!.isNotEmpty).toList();
-        list.shuffle();
-        seriesList.value = list;
-        if (list.isNotEmpty && list[0].sId != null) {
-          _fetchInitialLikeStatus(list[0].sId!);
-        }
+        allReels.assignAll(list);
+        applyLanguageFilter();
       }
     } catch (e) {
       print("Error fetching reels: $e");
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  void applyLanguageFilter() {
+    String selectedLang = homeController.selectedLanguage.value;
+    List<Series> filteredList = allReels;
+
+    if (selectedLang != 'All') {
+      filteredList = allReels.where((s) {
+        return s.languages?.any((lang) =>
+                lang.toLowerCase() == selectedLang.toLowerCase()) ??
+            false;
+      }).toList();
+    }
+
+    // Pause and collect old controllers to dispose them after the UI updates
+    final oldControllers = Map<int, VideoPlayerController>.from(controllers);
+    controllers.clear();
+    currentIndex.value = 0;
+
+    var listToAssign = List<Series>.from(filteredList);
+    // Only shuffle if there's actually something to show
+    if (listToAssign.isNotEmpty) {
+      listToAssign.shuffle();
+    }
+    seriesList.assignAll(listToAssign);
+
+    // Dispose old controllers after the next frame to avoid "used after disposed" errors in UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (var c in oldControllers.values) {
+        c.dispose();
+      }
+    });
+
+    if (seriesList.isNotEmpty && seriesList[0].sId != null) {
+      _fetchInitialLikeStatus(seriesList[0].sId!);
     }
   }
 
@@ -61,12 +109,18 @@ class ReelController extends GetxController {
     return controller;
   }
 
-  void onPageChanged(int index) {
+  void onPageChanged(int index) async {
     controllers[currentIndex.value]?.pause();
     currentIndex.value = index;
     final newController = getController(index);
     newController.setVolume(isMuted.value ? 0 : 1.0);
-    newController.play();
+    
+    // Request audio focus before playing
+    final session = await AudioSession.instance;
+    if (await session.setActive(true)) {
+      newController.play();
+    }
+    
     if (seriesList[index].sId != null) _fetchInitialLikeStatus(seriesList[index].sId!);
     if (index + 1 < seriesList.length) getController(index + 1);
     controllers.keys.toList().forEach((key) {
@@ -83,10 +137,13 @@ class ReelController extends GetxController {
     }
   }
 
-  void resumeCurrent() {
+  void resumeCurrent() async {
     if (controllers.containsKey(currentIndex.value)) {
-      controllers[currentIndex.value]!.setVolume(isMuted.value ? 0 : 1.0);
-      controllers[currentIndex.value]!.play();
+      final session = await AudioSession.instance;
+      if (await session.setActive(true)) {
+        controllers[currentIndex.value]!.setVolume(isMuted.value ? 0 : 1.0);
+        controllers[currentIndex.value]!.play();
+      }
     }
   }
 

@@ -408,24 +408,88 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             Obx(() {
               if (ctr.isSearching.value) return const SizedBox.shrink();
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(ctr.tabs.length, (index) {
-                  final isSelected = ctr.selectedTabIndex.value == index;
-                  return InkWell(
-                    onTap: () => ctr.changeTab(index),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Text(
-                        ctr.tabs[index],
-                        style: text14(
-                          color: isSelected ? AppColors.error : AppColors.textSecondary,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tab Row (Popular, Latest, etc.)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Row(
+                      children: List.generate(ctr.tabs.length, (index) {
+                        final isSelected = ctr.selectedTabIndex.value == index;
+                        return InkWell(
+                          onTap: () => ctr.changeTab(index),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 8),
+                            child: Text(
+                              ctr.tabs[index],
+                              style: text14(
+                                color: isSelected
+                                    ? AppColors.error
+                                    : AppColors.textSecondary,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
                     ),
-                  );
-                }),
+                  ),
+                  const SizedBox(height: 4),
+                  // Language Row (All, Hindi, English, etc.)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Row(
+                      children: List.generate(ctr.languages.length, (index) {
+                        final lang = ctr.languages[index];
+                        final isSelected = ctr.selectedLanguage.value == lang;
+                        return InkWell(
+                          onTap: () => ctr.setLanguage(lang),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.error.withOpacity(0.1)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                if (lang == 'All')
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6.0),
+                                    child: Icon(
+                                      Icons.translate_rounded,
+                                      size: 20,
+                                      color: AppColors.error.withOpacity(0.8),
+                                    ),
+                                  ),
+                                Text(
+                                  lang,
+                                  style: text12(
+                                    color: isSelected
+                                        ? AppColors.error
+                                        : AppColors.textSecondary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
               );
             }),
             Expanded(

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -189,8 +190,13 @@ class _VideoReelItemState extends State<VideoReelItem> {
 
       await _videoPlayerController!.initialize();
       await _videoPlayerController!.setLooping(true);
-      await _videoPlayerController!.play();
-      
+
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+      if (await session.setActive(true)) {
+        await _videoPlayerController!.play();
+      }
+
       _videoPlayerController!.setVolume(isMuted.value ? 0 : 1.0);
       isPlaying.value = true;
 
@@ -238,8 +244,11 @@ class _VideoReelItemState extends State<VideoReelItem> {
       if (!widget.isOffline) {
         _sendHistoryToApi(_videoPlayerController!.value.position.inSeconds);
       }
-      _videoPlayerController?.dispose();
+      final controller = _videoPlayerController;
       _videoPlayerController = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller?.dispose();
+      });
     }
   }
 
@@ -250,14 +259,17 @@ class _VideoReelItemState extends State<VideoReelItem> {
     super.dispose();
   }
 
-  void _togglePlayPause() {
+  void _togglePlayPause() async {
     if (_videoPlayerController == null || !_videoPlayerController!.value.isInitialized) return;
     if (_videoPlayerController!.value.isPlaying) {
       _videoPlayerController!.pause();
       isPlaying.value = false;
     } else {
-      _videoPlayerController!.play();
-      isPlaying.value = true;
+      final session = await AudioSession.instance;
+      if (await session.setActive(true)) {
+        _videoPlayerController!.play();
+        isPlaying.value = true;
+      }
     }
     setState(() {}); // For instant UI feedback
   }

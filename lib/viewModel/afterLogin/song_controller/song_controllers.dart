@@ -7,12 +7,14 @@ import '../../../model/responce/audio_res_model/song_play_res_model.dart';
 import '../../../model/responce/audio_res_model/song_res_model.dart';
 import '../../../model/responce/song_res_model/song_res_model.dart';
 import '../../../repo/audio_repo.dart';
+import '../../../repo/series_repo.dart';
 import '../../../routes/app_routes.dart';
 import '../../../utils/custom_snakebar.dart';
 import '../download_controller/download_controller.dart';
 
 class SongListController extends GetxController {
   final AudioRepo _repo = AudioRepo();
+  final SeriesRepo _seriesRepo = SeriesRepo();
   // final MusicPlayerController controller = Get.put(MusicPlayerController());
   final DownloadController downloadController = Get.put(DownloadController());
 
@@ -33,8 +35,8 @@ class SongListController extends GetxController {
   var isPlaybackLoading = false.obs;
   var selectedTab =
       0.obs; // 0: Popular, 1: Trending, 2: Top Charts, 3: New Releases
-  final List<String> languages = ['English', 'Hindi', 'Punjabi', 'Spanish'];
-  var selectedLanguage = 'English'.obs;
+  var languages = <String>['All'].obs;
+  var selectedLanguage = 'All'.obs;
 
   var songResponse = ApiResponse<SongResModel>.loading().obs;
   var allSongs = <Song>[].obs;
@@ -50,8 +52,23 @@ class SongListController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    fetchLanguages();
     fetchSongs();
     fetchFavoriteSong();
+  }
+
+  Future<void> fetchLanguages() async {
+    try {
+      final response = await _seriesRepo.fetchLanguages();
+      if (response.success == true && response.languages != null) {
+        List<String> langNames = ['All'];
+        langNames.addAll(
+            response.languages!.map((l) => l.name ?? "").where((n) => n.isNotEmpty));
+        languages.assignAll(langNames);
+      }
+    } catch (e) {
+      print("Error fetching languages: $e");
+    }
   }
 
   void fetchSongs() async {
@@ -225,17 +242,25 @@ class SongListController extends GetxController {
   }
 
   List<Song> _applyFilter(List<Song> source) {
+    List<Song> filtered = source;
+
+    // Filter by Language
+    if (selectedLanguage.value != 'All') {
+      filtered = filtered.where((s) => s.language == selectedLanguage.value).toList();
+    }
+
+    // Filter by Tab
     switch (selectedTab.value) {
       case 0:
-        return source.where((s) => s.isPopular ?? false).toList();
+        return filtered.where((s) => s.isPopular ?? false).toList();
       case 1:
-        return source.where((s) => s.isTrending ?? false).toList();
+        return filtered.where((s) => s.isTrending ?? false).toList();
       case 2:
-        return source.where((s) => s.isTopChart ?? false).toList();
+        return filtered.where((s) => s.isTopChart ?? false).toList();
       case 3:
-        return source.where((s) => s.isNewRelease ?? false).toList();
+        return filtered.where((s) => s.isNewRelease ?? false).toList();
       default:
-        return source;
+        return filtered;
     }
   }
 
@@ -246,6 +271,7 @@ class SongListController extends GetxController {
 
   void changeLanguage(String lang) {
     selectedLanguage.value = lang;
+    filterSongs();
   }
 
   void showMoreOptions(int listIndex, {bool isPlaylist = false}) {
