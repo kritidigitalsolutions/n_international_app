@@ -161,9 +161,7 @@ class OtpController extends GetxController {
         );
       } else {
         Get.offAllNamed(AppRoutes.myHome);
-        Future.delayed(const Duration(milliseconds: 300), () {
-          Get.find<HomeController>().showLoginSnackbar();
-        });
+        // Popup removed for existing users
       }
 
     } catch (e) {
